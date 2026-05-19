@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -2219,6 +2219,8 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+
+    <script src="js/utils.js"></script>
    
     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -2253,19 +2255,7 @@
     // VARIÁVEL GLOBAL: Lembra de qual módulo o usuário veio antes de abrir o cadastro de pessoas
     window.moduloOrigemCadastroPessoa = null;
 
-   
-    // 1. Olhinho de visualizar senha (Genérico para qualquer campo)
-window.alternarVisibilidadeSenha = function(inputId, iconeId) {
-    const input = document.getElementById(inputId);
-    const icone = document.getElementById(iconeId);
-    if (input.type === 'password') {
-        input.type = 'text';
-        icone.classList.replace('bi-eye', 'bi-eye-slash');
-    } else {
-        input.type = 'password';
-        icone.classList.replace('bi-eye-slash', 'bi-eye');
-    }
-};
+    // [MOVIDO PARA js/utils.js] alternarVisibilidadeSenha
 
 // 2. Recuperar Senha (Envia e-mail oficial do Google)
 window.recuperarSenha = async function() {
@@ -2649,58 +2639,8 @@ window.processarTrocaSenha = async function() {
         });
     }
 
-    window.formatarDataGlobal = function(dataStr) {
-        if (!dataStr) return '-';
-        const p = dataStr.split('-');
-        return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : dataStr;
-    }
-
-    window.gerarLinkWhatsApp = function(telefone) {
-        if (!telefone) return '-';
-        let num = telefone.replace(/\D/g, ''); 
-        if (num.length === 10 || num.length === 11) { num = '55' + num; }
-        if (num.length < 10) return telefone; 
-        return `<a href="https://wa.me/${num}" target="_blank" class="text-success text-decoration-none fw-bold" title="Abrir WhatsApp">
-                    <i class="bi bi-whatsapp"></i> ${telefone}
-                </a>`;
-    }
-
-    // ==========================================
-    // FORMATAÇÃO E MÁSCARAS
-    // ==========================================
-    window.aplicarMascaraMoeda = function(event) {
-        let input = event.target;
-        let valor = input.value.replace(/\D/g, "");
-        if (valor === "") { input.value = ""; return; }
-        valor = (parseInt(valor, 10) / 100).toFixed(2);
-        valor = valor.replace(".", ",");
-        valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
-        input.value = valor;
-    }
-
-    window.converterMoedaParaFloat = function(valorFormatado) {
-        if (!valorFormatado) return 0;
-        let numeroLimpo = valorFormatado.replace(/\./g, "").replace(",", ".");
-        return parseFloat(numeroLimpo) || 0;
-    }
-
-    window.aplicarMascaraCpf = function(event) {
-        let v = event.target.value.replace(/\D/g, "");
-        v = v.replace(/(\d{3})(\d)/, "$1.$2");
-        v = v.replace(/(\d{3})(\d)/, "$1.$2");
-        v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-        event.target.value = v;
-    }
-
-    window.aplicarMascaraCnpj = function(event) {
-        let v = event.target.value.replace(/\D/g, "");
-        v = v.replace(/^(\d{2})(\d)/, "$1.$2");
-        v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
-        v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
-        v = v.replace(/(\d{4})(\d)/, "$1-$2");
-        event.target.value = v;
-    }
-
+    // [MOVIDO PARA js/utils.js] formatarDataGlobal, gerarLinkWhatsApp, aplicarMascaraMoeda,
+    // converterMoedaParaFloat, aplicarMascaraCpf, aplicarMascaraCnpj
     window.aplicarMascaraCep = function(event) {
         let v = event.target.value.replace(/\D/g, "");
         v = v.replace(/^(\d{5})(\d)/, "$1-$2");
@@ -2989,21 +2929,7 @@ window.processarTrocaSenha = async function() {
     container.appendChild(div);
 }
 
-    // --- NOVA FUNÇÃO DE MÁSCARA INTELIGENTE ---
-    window.aplicarMascaraCpfCnpj = function(event) {
-        let v = event.target.value.replace(/\D/g, "");
-        if (v.length <= 11) { // Máscara de CPF
-            v = v.replace(/(\d{3})(\d)/, "$1.$2");
-            v = v.replace(/(\d{3})(\d)/, "$1.$2");
-            v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-        } else { // Máscara de CNPJ
-            v = v.replace(/^(\d{2})(\d)/, "$1.$2");
-            v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
-            v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
-            v = v.replace(/(\d{4})(\d)/, "$1-$2");
-        }
-        event.target.value = v;
-    }
+    // [MOVIDO PARA js/utils.js] aplicarMascaraCpfCnpj
 
     // ==========================================
 // MÚLTIPLOS COMPRADORES (LARGURA TOTAL)
@@ -3141,82 +3067,7 @@ window.adicionarVendedor = function(vend = {}) {
     container.appendChild(div);
 }
 
-    // ==========================================
-    // LÓGICA DE PESSOAS: IDADE E SIGNO
-    // ==========================================
-    window.calcularIdadeESigno = function() {
-        const dataInput = document.getElementById('pesDtNasc').value;
-        if (!dataInput) {
-            document.getElementById('pesIdade').value = '';
-            document.getElementById('pesSigno').value = '';
-            return;
-        }
-
-        // Calcula Idade
-        const hoje = new Date();
-        const nasc = new Date(dataInput + "T00:00:00"); // T00:00:00 evita fuso horário errado
-        let idade = hoje.getFullYear() - nasc.getFullYear();
-        const m = hoje.getMonth() - nasc.getMonth();
-        if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) { idade--; }
-        document.getElementById('pesIdade').value = idade + " anos";
-
-        // Calcula Signo
-        const dia = nasc.getDate();
-        const mes = nasc.getMonth() + 1;
-        let signo = "";
-
-        if ((mes == 3 && dia >= 21) || (mes == 4 && dia <= 19)) signo = "Áries ♈";
-        else if ((mes == 4 && dia >= 20) || (mes == 5 && dia <= 20)) signo = "Touro ♉";
-        else if ((mes == 5 && dia >= 21) || (mes == 6 && dia <= 20)) signo = "Gêmeos ♊";
-        else if ((mes == 6 && dia >= 21) || (mes == 7 && dia <= 22)) signo = "Câncer ♋";
-        else if ((mes == 7 && dia >= 23) || (mes == 8 && dia <= 22)) signo = "Leão ♌";
-        else if ((mes == 8 && dia >= 23) || (mes == 9 && dia <= 22)) signo = "Virgem ♍";
-        else if ((mes == 9 && dia >= 23) || (mes == 10 && dia <= 22)) signo = "Libra ♎";
-        else if ((mes == 10 && dia >= 23) || (mes == 11 && dia <= 21)) signo = "Escorpião ♏";
-        else if ((mes == 11 && dia >= 22) || (mes == 12 && dia <= 21)) signo = "Sagitário ♐";
-        else if ((mes == 12 && dia >= 22) || (mes == 1 && dia <= 19)) signo = "Capricórnio ♑";
-        else if ((mes == 1 && dia >= 20) || (mes == 2 && dia <= 18)) signo = "Aquário ♒";
-        else if ((mes == 2 && dia >= 19) || (mes == 3 && dia <= 20)) signo = "Peixes ♓";
-
-        document.getElementById('pesSigno').value = signo;
-    }
-
-    window.calcularIdadeESignoColab = function() {
-    const dataInput = document.getElementById('colabDataNasc').value;
-    if (!dataInput) {
-        document.getElementById('colabIdade').value = '';
-        document.getElementById('colabSigno').value = '';
-        return;
-    }
-
-    // Calcula Idade
-    const hoje = new Date();
-    const nasc = new Date(dataInput + "T00:00:00");
-    let idade = hoje.getFullYear() - nasc.getFullYear();
-    const m = hoje.getMonth() - nasc.getMonth();
-    if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) { idade--; }
-    document.getElementById('colabIdade').value = idade + " anos";
-
-    // Calcula Signo
-    const dia = nasc.getDate();
-    const mes = nasc.getMonth() + 1;
-    let signo = "";
-
-    if ((mes == 3 && dia >= 21) || (mes == 4 && dia <= 19)) signo = "Áries ♈";
-    else if ((mes == 4 && dia >= 20) || (mes == 5 && dia <= 20)) signo = "Touro ♉";
-    else if ((mes == 5 && dia >= 21) || (mes == 6 && dia <= 20)) signo = "Gêmeos ♊";
-    else if ((mes == 6 && dia >= 21) || (mes == 7 && dia <= 22)) signo = "Câncer ♋";
-    else if ((mes == 7 && dia >= 23) || (mes == 8 && dia <= 22)) signo = "Leão ♌";
-    else if ((mes == 8 && dia >= 23) || (mes == 9 && dia <= 22)) signo = "Virgem ♍";
-    else if ((mes == 9 && dia >= 23) || (mes == 10 && dia <= 22)) signo = "Libra ♎";
-    else if ((mes == 10 && dia >= 23) || (mes == 11 && dia <= 21)) signo = "Escorpião ♏";
-    else if ((mes == 11 && dia >= 22) || (mes == 12 && dia <= 21)) signo = "Sagitário ♐";
-    else if ((mes == 12 && dia >= 22) || (mes == 1 && dia <= 19)) signo = "Capricórnio ♑";
-    else if ((mes == 1 && dia >= 20) || (mes == 2 && dia <= 18)) signo = "Aquário ♒";
-    else if ((mes == 2 && dia >= 19) || (mes == 3 && dia <= 20)) signo = "Peixes ♓";
-
-    document.getElementById('colabSigno').value = signo;
-}
+    // [MOVIDO PARA js/utils.js] calcularIdadeESigno, calcularIdadeESignoColab
 
     // Máscara e Busca de CEP exclusivos para a aba Pessoas
     window.aplicarMascaraCepPessoa = function(event) {
