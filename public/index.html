@@ -6740,10 +6740,11 @@ window.imprimirMemoriaCalculo = function(beneficiario) {
             return;
         }
 
+        // MÁGICA: Mapeia o que já foi efetivado olhando EXATAMENTE para o Beneficiário
         let faturadoMap = {};
         repassesDB.forEach(r => {
             if (r.status !== 'Cancelado' && r.status !== 'Provisão') {
-                let key = `${r.vendaId}_${r.tipoBeneficiario}_${r.tipo}`;
+                let key = `${r.vendaId}_${r.beneficiario}_${r.tipo}`;
                 let grossEquivalent = Number(r.bruto) || 0;
                 faturadoMap[key] = (faturadoMap[key] || 0) + grossEquivalent;
             }
@@ -6754,108 +6755,61 @@ window.imprimirMemoriaCalculo = function(beneficiario) {
         vendasDB.forEach(v => {
             const idVisual = v.codigoVenda || v.id.substring(0, 6).toUpperCase();
             
-            let nfsDaVenda = notasDB.filter(n => {
-                if (n.status === 'NF Cancelada') return false;
-                const temNaRaiz = (n.vendaId === v.id) || (n.vendaVisual && n.vendaVisual.trim().toUpperCase() === idVisual);
-                const temNoItem = n.itens && n.itens.some(item => (item.vendaId === v.id) || (item.vendaVisual && item.vendaVisual.trim().toUpperCase() === idVisual));
-                return temNaRaiz || temNoItem;
-            });
-
-            let baseRateio = 0;
-            let impostoVisual = 0;
-            let usaNf = false;
-
-            if (nfsDaVenda.length > 0) {
-                usaNf = true;
-                
-                // MÁGICA 1: Captura a alíquota da NF para aplicar proporcionalmente aos Prêmios
-                impostoVisual = parseFloat(nfsDaVenda[0].percImp) || 0;
-
-                nfsDaVenda.forEach(nf => {
-                    if (nf.itens && nf.itens.length > 0) {
-                        let itemVenda = nf.itens.find(i => i.vendaId === v.id || (i.vendaVisual && i.vendaVisual.trim().toUpperCase() === idVisual));
-                        if (itemVenda && Number(nf.brutoTotal) > 0) {
-                            let proporcao = (Number(itemVenda.bruto) || 0) / Number(nf.brutoTotal);
-                            baseRateio += (Number(nf.liquidoTotal) || 0) * proporcao;
-                        }
-                    } else {
-                        baseRateio += Number(nf.liquidoTotal) || 0;
-                    }
-                });
-            } else {
-                impostoVisual = v.imobiliaria ? (imobTaxMap[v.imobiliaria] || 0) : 0;
-                let deducoes = (v.temParceria === 'Sim' ? Number(v.vlrParceria) : 0) + (v.pagaCadastro === 'Sim' ? Number(v.vlrCadastro) : 0);
-                baseRateio = (Number(v.vlrComissao) || 0) - deducoes;
-            }
-
-            const addProvisao = (tipoBen, nomeBen, percRateio, vlrAbsoluto, tipoRepasse = 'Comissão') => {
+            // FUNÇÃO BLINDADA: Puxa o valor absoluto salvo na Venda, ignorando matemáticas complexas
+            const addProvisao = (tipoBen, nomeBen, vlrAbsolutoEsperado, tipoRepasse = 'Comissão') => {
                 if (!nomeBen) return;
                 
-                let valorDevido = 0;
-                
-                // MÁGICA 2: Ajuste contábil inteligente
-                if (tipoRepasse === 'Comissão' && Number(percRateio) > 0) {
-                    valorDevido = baseRateio * (Number(percRateio) / 100);
-                } else {
-                    // Trata Prêmios e Parcerias (Valores Fixos Absolutos)
-                    let valBruto = Number(vlrAbsoluto) || 0;
-                    
-                    if (usaNf) {
-                        // Desconta o imposto da NF no prêmio para igualar ao líquido e anular o "AJUSTE"
-                        valorDevido = valBruto - (valBruto * (impostoVisual / 100));
-                    } else {
-                        valorDevido = valBruto; 
-                    }
-                }
-
+                let valorDevido = Number(vlrAbsolutoEsperado) || 0;
                 if (valorDevido <= 0) return;
 
-                let key = `${v.id}_${tipoBen}_${tipoRepasse}`;
+                let key = `${v.id}_${nomeBen}_${tipoRepasse}`;
                 let faturado = faturadoMap[key] || 0;
                 let saldo = valorDevido - faturado;
 
                 if (saldo < 0.05) saldo = 0; 
                 if (saldo <= 0) return; 
                 
-                let liquidoCalc = usaNf ? saldo : saldo - (saldo * (impostoVisual / 100));
+                // Se for a Imobiliária Principal, já puxa o imposto do cadastro dela
+                let impostoVisual = (tipoBen === 'Imobiliária') ? (imobTaxMap[nomeBen] || 0) : 0;
 
                 todasLinhas.push({
                     isVirtual: true, vendaId: v.id, vendaVisual: idVisual, tipo: tipoRepasse, 
                     beneficiario: nomeBen, tipoBeneficiario: tipoBen, 
-                    bruto: saldo, percImp: impostoVisual, liquido: liquidoCalc, 
+                    bruto: saldo, percImp: impostoVisual, liquido: saldo, // O líquido real é calculado só na hora de faturar
                     dataPrev: '', status: 'Provisão',
                     produto: v.produto || '', unidade: (v.unidades && v.unidades.length > 0) ? v.unidades.join(', ') : (v.unidade || '-'),
-                    usaNf: usaNf 
+                    usaNf: false 
                 });
             };
 
             if (window.usuarioLogado.perfil !== 'Corretor') {
-                if (v.percCorretor > 0) addProvisao('Corretor', v.corretor, v.percCorretor, 0, 'Comissão');
-                if (v.premioCorretor > 0) addProvisao('Corretor', v.corretor, 0, v.premioCorretor, 'Prêmio');
+                addProvisao('Corretor', v.corretor, v.vlrCorretor, 'Comissão');
+                addProvisao('Corretor', v.corretor, v.premioCorretor, 'Prêmio');
 
                 if (window.usuarioLogado.perfil !== 'Gerente') {
-                    if (v.percGerente > 0) addProvisao('Gerente', v.gerente, v.percGerente, 0, 'Comissão');
-                    if (v.premioGerente > 0) addProvisao('Gerente', v.gerente, 0, v.premioGerente, 'Prêmio');
+                    addProvisao('Gerente', v.gerente, v.vlrGerente, 'Comissão');
+                    addProvisao('Gerente', v.gerente, v.premioGerente, 'Prêmio');
                     
                     if (v.temDiretoria && v.temDiretoria !== 'Não') {
-                        addProvisao('Diretoria', v.temDiretoria, v.percDiretoria, 0, 'Comissão');
-                        if (v.premioDiretoria > 0) addProvisao('Diretoria', v.temDiretoria, 0, v.premioDiretoria, 'Prêmio');
+                        addProvisao('Diretoria', v.temDiretoria, v.vlrDiretoria, 'Comissão');
+                        addProvisao('Diretoria', v.temDiretoria, v.premioDiretoria, 'Prêmio');
                     }
-                    if (v.temRateioExtra === 'Sim') addProvisao('Parceiro', v.nomeRateioExtra, 0, v.vlrExtra, 'Comissão');
-                    if (v.temParceria === 'Sim') addProvisao('Parceiro', v.nomeParceria, 0, v.vlrParceria, 'Parceria');
-                    if (v.pagaCadastro === 'Sim') addProvisao('Captador', v.nomeCadastro, 0, v.vlrCadastro, 'Outros');
+                    if (v.temRateioExtra === 'Sim') addProvisao('Parceiro', v.nomeRateioExtra, v.vlrExtra, 'Comissão');
+                    if (v.temParceria === 'Sim') addProvisao('Parceiro', v.nomeParceria, v.vlrParceria, 'Parceria');
+                    if (v.pagaCadastro === 'Sim') addProvisao('Captador', v.nomeCadastro, v.vlrCadastro, 'Outros');
                     if (v.imobiliaria) {
-                        addProvisao('Imobiliária', v.imobiliaria, v.percImob, 0, 'Comissão');
-                        if (v.premioImob > 0) addProvisao('Imobiliária', v.imobiliaria, 0, v.premioImob, 'Prêmio');
+                        addProvisao('Imobiliária', v.imobiliaria, v.vlrImob, 'Comissão');
+                        addProvisao('Imobiliária', v.imobiliaria, v.premioImob, 'Prêmio');
                     }
                 } else {
-                     if (v.percGerente > 0) addProvisao('Gerente', v.gerente, v.percGerente, 0, 'Comissão');
-                     if (v.premioGerente > 0) addProvisao('Gerente', v.gerente, 0, v.premioGerente, 'Prêmio');
+                     addProvisao('Gerente', v.gerente, v.vlrGerente, 'Comissão');
+                     addProvisao('Gerente', v.gerente, v.premioGerente, 'Prêmio');
                 }
             }
         });
 
         repassesDB.forEach(r => { if (r.status !== 'Provisão') todasLinhas.push(r); });
+        
         todasLinhas.sort((a, b) => {
             if (a.vendaVisual > b.vendaVisual) return 1;
             if (a.vendaVisual < b.vendaVisual) return -1;
@@ -6916,11 +6870,7 @@ window.imprimirMemoriaCalculo = function(beneficiario) {
             
             let impostoFormatado = '';
             if (r.isVirtual) {
-                if (r.usaNf) {
-                    impostoFormatado = `<span class="badge bg-success-subtle text-success border border-success" title="Imposto já descontado na emissão da NF. Defina o percentual no Faturamento">Pendente NF ⏳</span>`;
-                } else {
-                    impostoFormatado = `<span class="text-warning text-dark fw-bold" title="A definir na hora do faturamento">${r.percImp ? String(r.percImp).replace('.', ',') : '0'}% ⏳</span>`;
-                }
+                impostoFormatado = `<span class="text-warning text-dark fw-bold" title="A definir na hora do faturamento">${r.percImp ? String(r.percImp).replace('.', ',') : '0'}% ⏳</span>`;
             } else {
                 impostoFormatado = r.percImp ? String(r.percImp).replace('.', ',') + '%' : '0%';
             }
