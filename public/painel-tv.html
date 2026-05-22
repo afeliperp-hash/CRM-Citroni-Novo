@@ -93,12 +93,6 @@
             box-shadow: 0 0.5vh 1.5vh rgba(0,0,0,0.1);
             background-color: #f8f9fa;
         }
-        .aviso-item {
-            font-size: 2.8vh;
-            line-height: 1.5;
-            padding: 1vh 0;
-            border-bottom: 1px solid #dee2e6;
-        }
 
         /* Overlay do Vídeo */
         #videoContainer {
@@ -143,7 +137,7 @@
         .ticker {
             display: inline-block; height: 6vh; line-height: 6vh; white-space: nowrap;
             padding-right: 100vw; box-sizing: content-box;
-            animation: tickerScroll 600s linear infinite;
+            animation: tickerScroll 100s linear infinite;
             color: #fff; font-size: 2.8vh;
         }
         .ticker:hover { animation-play-state: paused; }
@@ -168,15 +162,11 @@
         </div>
     </div>
 
-    <!-- Controles (Ficam fora das telas para não piscarem) -->
     <div id="tvControls" class="d-none">
         <input type="month" id="mesSelect" class="form-control form-control-sm fw-bold text-primary border-primary shadow-sm" style="width: auto; cursor: pointer;" onchange="mudarMesDash()">
         <button class="btn btn-sm btn-outline-dark shadow-sm bg-white" onclick="toggleModoTV()" title="Tela Cheia"><i class="bi bi-arrows-fullscreen"></i></button>
     </div>
 
-    <!-- ============================================== -->
-    <!-- TELA 1: PAINEL DE METAS                        -->
-    <!-- ============================================== -->
     <div id="painelMetasContainer" class="tv-screen-container fade-in d-none">
         <div class="text-center z-2 position-relative">
             <h2 class="text-uppercase txt-mes text-muted" style="letter-spacing: 2px;">META DO MÊS: <span id="lblMesMeta" class="roxo-citroni fw-bold">--/----</span></h2>
@@ -192,80 +182,23 @@
             <h1 class="text-center fw-bold txt-alcancado roxo-citroni" style="letter-spacing: -2px;">ALCANÇADO: <span class="text-nowrap">R$ <span id="lblAlcancadoGlobal">0,00</span></span></h1>
         </div>
 
-        <div class="row g-3 text-center justify-content-center z-2 position-relative w-100 m-0">
-            <div class="col-md-4 col-12">
-                <div class="card-equipe" style="border-color: rgba(220, 53, 69, 0.4);">
-                    <h5 class="text-danger fw-bold m-0" style="letter-spacing: 1px;">🔥 FÊNIX</h5>
-                    <div class="text-dark fw-bold valor-equipe">R$ <span id="lblAlcancadoFenix">0,00</span></div>
-                    <div class="progress progress-equipe">
-                        <div id="barFenix" class="progress-bar progress-bar-striped progress-bar-animated bg-danger fw-bold" style="width: 0%;">0%</div>
-                    </div>
-                </div>
+        <div class="row g-3 text-center justify-content-center z-2 position-relative w-100 m-0" id="gridEquipesDinamico">
             </div>
-            <div class="col-md-4 col-12">
-                <div class="card-equipe" style="border-color: rgba(13, 110, 253, 0.4);">
-                    <h5 class="text-primary fw-bold m-0" style="letter-spacing: 1px;">⚡ TITANS</h5>
-                    <div class="text-dark fw-bold valor-equipe">R$ <span id="lblAlcancadoTitans">0,00</span></div>
-                    <div class="progress progress-equipe">
-                        <div id="barTitans" class="progress-bar progress-bar-striped progress-bar-animated bg-primary fw-bold" style="width: 0%;">0%</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 col-12">
-                <div class="card-equipe" style="border-color: rgba(25, 135, 84, 0.4);">
-                    <h5 class="fw-bold m-0" style="letter-spacing: 1px;">
-                        <span class="text-warning text-dark">🦅 THUNDERBIRDS</span> <span class="text-muted">/</span> <span class="text-success">👾 MONSTER'S</span>
-                    </h5>
-                    <div class="text-dark fw-bold valor-equipe">R$ <span id="lblAlcancadoThunderMonsters">0,00</span></div>
-                    <div class="progress progress-equipe">
-                        <div id="barThunderMonsters" class="progress-bar progress-bar-striped progress-bar-animated bg-success fw-bold" style="width: 0%;">0%</div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
-    <!-- ============================================== -->
-    <!-- TELA 2: MURAL DE AVISOS E COMUNICADOS          -->
-    <!-- ============================================== -->
     <div id="painelRecadosContainer" class="tv-screen-container fade-in d-none">
         <div class="text-center z-2 position-relative mb-2">
             <h2 class="text-uppercase fw-bold roxo-citroni" style="font-size: 5vh; letter-spacing: 2px;"><i class="bi bi-megaphone-fill text-warning"></i> MURAL DE COMUNICADOS</h2>
         </div>
         
-        <div class="row h-100 g-4 w-100 m-0">
-            <!-- Aniversariantes -->
-            <div class="col-md-4 d-flex flex-column pb-3">
-                <div class="card card-aviso" style="border-top: 1vh solid #d63384 !important;">
-                    <div class="card-body d-flex flex-column">
-                        <h4 class="fw-bold text-center" style="color: #d63384; font-size: 3.5vh;"><i class="bi bi-gift"></i> Aniversários da Semana</h4>
-                        <hr>
-                        <div id="listaAniversariantesTv" class="flex-grow-1 overflow-hidden" style="color: #444;">
-                            <div class="text-center text-muted mt-5">Carregando...</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- Lembretes NFs -->
-            <div class="col-md-4 d-flex flex-column pb-3">
-                <div class="card card-aviso" style="border-top: 1vh solid #0dcaf0 !important;">
-                    <div class="card-body d-flex flex-column">
-                        <h4 class="fw-bold text-info-emphasis text-center" style="font-size: 3.5vh;"><i class="bi bi-receipt"></i> Pendências de NF</h4>
-                        <hr>
-                        <div id="listaNfsTv" class="flex-grow-1 overflow-hidden" style="color: #444;">
-                            <div class="text-center text-muted mt-5">Carregando...</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- Avisos Gerais -->
-            <div class="col-md-4 d-flex flex-column pb-3">
-                <div class="card card-aviso" style="border-top: 1vh solid #ffc107 !important;">
-                    <div class="card-body d-flex flex-column">
-                        <h4 class="fw-bold text-warning text-dark text-center" style="font-size: 3.5vh;"><i class="bi bi-exclamation-triangle"></i> Avisos Gerais</h4>
-                        <hr>
-                        <div id="listaAvisosTv" class="flex-grow-1 overflow-hidden fw-bold" style="font-size: 3.5vh; line-height: 1.5; white-space: pre-wrap; color: #2c3e50;">
-                            <div class="text-center text-muted mt-5">Nenhum aviso no momento.</div>
+        <div class="row h-100 g-4 w-100 m-0 align-items-center">
+            <div class="col-12 pb-3 h-100">
+                <div class="card card-aviso border-0" style="border-top: 1.5vh solid #ffc107 !important; background: #fafbfc;">
+                    <div class="card-body d-flex flex-column justify-content-center py-5">
+                        <h4 class="fw-bold text-warning text-dark text-center mb-4" style="font-size: 5vh;"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i> Avisos Gerais</h4>
+                        <hr class="mb-5">
+                        <div id="listaAvisosTv" class="text-center fw-bold text-dark px-4" style="font-size: 5.5vh; line-height: 1.6; white-space: pre-wrap; letter-spacing: -0.5px;">
+                            <div class="text-center text-muted mt-5">Nenhum recado no momento.</div>
                         </div>
                     </div>
                 </div>
@@ -273,9 +206,6 @@
         </div>
     </div>
 
-    <!-- ============================================== -->
-    <!-- OVERLAYS (Vídeo e Ticker)                      -->
-    <!-- ============================================== -->
     <div id="videoContainer" class="d-none text-center">
         <h1 class="text-warning blink-text mb-3 fw-bold txt-comemoracao" style="text-shadow: 0 0 15px #ffc107;">🎉 META BATIDA! PARABÉNS EQUIPE! 🎉</h1>
         <div id="iframeVideo"></div>
@@ -304,7 +234,7 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        const LINK_VIDEO = "https://www.youtube.com/watch?v=1-xGerv5FOk";
+        const LINK_VIDEO = "https://www.youtube.com/watch?v=e8LABN1ef0o";
         let metaJaBatida = false;
         let unsubscribeVendas = null;
         let unsubscribeMeta = null;
@@ -312,31 +242,37 @@
         let ultimoAlcancadoGlobal = 0; 
 
         // ==================================================
-        // ROTINA DE TRANSIÇÃO DAS TELAS (A cada 60s)
+        // ROTINA DE TRANSIÇÃO ASSÍNCRONA DAS TELAS
         // ==================================================
-        let telaAtual = 1; // 1 = Metas, 2 = Recados
-        setInterval(() => {
-            const telaMetas = document.getElementById('painelMetasContainer');
-            const telaRecados = document.getElementById('painelRecadosContainer');
-            const ticker = document.getElementById('tickerWrap'); // <-- Pegando o Rodapé
+        let timeoutTransicao = null;
+
+        function gerenciarCicloTelas(proximaTela) {
+            // Evita duplicação de timers
+            if(timeoutTransicao) clearTimeout(timeoutTransicao);
             
-            // Só executa a transição se estiver logado
+            // Trava de segurança para não trocar se não estiver logado
             if (!document.getElementById('loginOverlay').classList.contains('d-none')) return;
 
-            if (telaAtual === 1) {
-                // Esconde Metas, Mostra Recados e Esconde o Rodapé
-                telaMetas.classList.add('d-none');
-                telaRecados.classList.remove('d-none');
-                ticker.classList.add('d-none'); 
-                telaAtual = 2;
-            } else {
-                // Esconde Recados, Mostra Metas e Mostra o Rodapé
+            const telaMetas = document.getElementById('painelMetasContainer');
+            const telaRecados = document.getElementById('painelRecadosContainer');
+            const ticker = document.getElementById('tickerWrap');
+
+            if (proximaTela === 1) {
+                // TELA DE METAS: Fica por 2 minutos (120 segundos)
                 telaRecados.classList.add('d-none');
                 telaMetas.classList.remove('d-none');
-                ticker.classList.remove('d-none'); 
-                telaAtual = 1;
+                ticker.classList.remove('d-none');
+                
+                timeoutTransicao = setTimeout(() => gerenciarCicloTelas(2), 120000); 
+            } else {
+                // TELA DE COMUNICADOS: Fica por 20 segundos
+                telaMetas.classList.add('d-none');
+                telaRecados.classList.remove('d-none');
+                ticker.classList.add('d-none');
+                
+                timeoutTransicao = setTimeout(() => gerenciarCicloTelas(1), 20000); 
             }
-        }, 60000); // 60.000 ms = 1 minuto
+        }
 
         // ==================================================
         // SISTEMA DE LOGIN DA TV
@@ -366,11 +302,8 @@
                 document.getElementById('loginOverlay').classList.add('d-none');
                 document.getElementById('tvControls').classList.remove('d-none');
                 
-                // Exibe a tela de Metas como inicial
-                telaAtual = 1;
-                document.getElementById('painelMetasContainer').classList.remove('d-none');
-                document.getElementById('painelRecadosContainer').classList.add('d-none');
-                document.getElementById('tickerWrap').classList.remove('d-none');
+                // MÁGICA DE TRANSIÇÃO: Ativa o ciclo começando pela tela de Metas
+                gerenciarCicloTelas(1);
 
                 const hoje = new Date();
                 const mesAtual = String(hoje.getMonth() + 1).padStart(2, '0');
@@ -380,7 +313,7 @@
                 document.getElementById('mesSelect').value = anoMesStr;
                 carregarDadosDoMes(anoMesStr);
 
-                // Inicia escutas de banco de dados para o Mural de Avisos
+                // Inicia escuta apenas dos Avisos Gerais
                 iniciarEscutasMural();
 
             } else {
@@ -396,78 +329,7 @@
         // CARREGAMENTO DO MURAL DE AVISOS
         // ==================================================
         function iniciarEscutasMural() {
-            // 1. Lembretes de NFs (Status novo incluso)
-            onSnapshot(collection(db, "repasses"), (snap) => {
-                let nfsHtml = '';
-                snap.forEach(doc => {
-                    const r = doc.data();
-                    if (r.status === 'Aguardando entrega da NF' || r.statusNfCorretor === 'Solicitada') {
-                        nfsHtml += `<div class="aviso-item">
-                                        <strong class="text-info-emphasis">${r.beneficiario || 'Corretor'}</strong><br>
-                                        <span class="text-muted" style="font-size: 2vh;">Ref: Venda ${r.vendaVisual || '-'}</span>
-                                    </div>`;
-                    }
-                });
-                document.getElementById('listaNfsTv').innerHTML = nfsHtml || '<div class="text-center text-muted mt-5">Nenhuma nota fiscal pendente.</div>';
-            });
-
-            // 2. Aniversariantes da Semana (MÁGICA: Juntando Clientes e Colaboradores)
-            let niversClientes = [];
-            let niversEquipe = [];
-
-            // Função que une e joga na tela
-            const renderizarAniversarios = () => {
-                let todos = [...niversClientes, ...niversEquipe];
-                
-                // Ordena pelo dia do mês para ficar organizado
-                todos.sort((a, b) => a.dataOrdem - b.dataOrdem);
-
-                let niversHtml = '';
-                todos.forEach(p => {
-                    niversHtml += `<div class="aviso-item d-flex justify-content-between align-items-center">
-                                      <strong style="color: #2c3e50;">${p.nome}</strong>
-                                      <span class="badge" style="background-color: #d63384;">${p.diaMes}</span>
-                                   </div>`;
-                });
-                document.getElementById('listaAniversariantesTv').innerHTML = niversHtml || '<div class="text-center text-muted mt-5">Sem aniversários nesta semana.</div>';
-            };
-
-            // Escutando Clientes (Pessoas)
-            onSnapshot(collection(db, "pessoas"), (snap) => {
-                niversClientes = [];
-                snap.forEach(doc => {
-                    const p = doc.data();
-                    if (isBirthdayThisWeek(p.dtNasc)) {
-                        const partes = p.dtNasc.split('-');
-                        niversClientes.push({
-                            nome: p.nome || p.apelido || '',
-                            diaMes: `${partes[2]}/${partes[1]}`,
-                            dataOrdem: new Date(new Date().getFullYear(), parseInt(partes[1])-1, parseInt(partes[2]))
-                        });
-                    }
-                });
-                renderizarAniversarios();
-            });
-
-            // Escutando Equipe (Colaboradores)
-            onSnapshot(collection(db, "colaboradores"), (snap) => {
-                niversEquipe = [];
-                snap.forEach(doc => {
-                    const c = doc.data();
-                    // Colaboradores salvam a data como dataNasc em vez de dtNasc
-                    if (isBirthdayThisWeek(c.dataNasc)) { 
-                        const partes = c.dataNasc.split('-');
-                        niversEquipe.push({
-                            nome: `${c.nome} <small class="text-muted">(Equipe)</small>`,
-                            diaMes: `${partes[2]}/${partes[1]}`,
-                            dataOrdem: new Date(new Date().getFullYear(), parseInt(partes[1])-1, parseInt(partes[2]))
-                        });
-                    }
-                });
-                renderizarAniversarios();
-            });
-
-            // 3. Avisos Gerais e Livres
+            // Apenas Avisos Gerais (Deletados Aniversários e NFs)
             onSnapshot(doc(db, "configuracoes", "painel_tv"), (snap) => {
                 if (snap.exists() && snap.data().avisos_gerais) {
                     document.getElementById('listaAvisosTv').innerText = snap.data().avisos_gerais;
@@ -477,28 +339,6 @@
             });
         }
 
-        // Função ninja para checar se o aniversário cai na semana atual (Dom a Sab)
-        function isBirthdayThisWeek(dateStr) {
-            if (!dateStr) return false;
-            const today = new Date();
-            const [ano, mes, dia] = dateStr.split('-');
-            
-            // Finge que a pessoa nasceu no ano atual para facilitar a matemática
-            const niverEsteAno = new Date(today.getFullYear(), parseInt(mes)-1, parseInt(dia));
-            
-            // Descobre o primeiro dia da semana (Domingo = 0) e o último (Sábado = 6)
-            const diaSemana = today.getDay(); 
-            const inicioSemana = new Date(today);
-            inicioSemana.setDate(today.getDate() - diaSemana);
-            inicioSemana.setHours(0,0,0,0);
-            
-            const fimSemana = new Date(inicioSemana);
-            fimSemana.setDate(inicioSemana.getDate() + 6);
-            fimSemana.setHours(23,59,59,999);
-            
-            return niverEsteAno >= inicioSemana && niverEsteAno <= fimSemana;
-        }
-
         // ==================================================
         // LÓGICA DE ATUALIZAÇÃO DO PAINEL DE METAS
         // ==================================================
@@ -506,6 +346,8 @@
             const novoAnoMes = document.getElementById('mesSelect').value;
             if(novoAnoMes) {
                 carregarDadosDoMes(novoAnoMes);
+                // Reseta a visualização forçando a volta pro painel de metas
+                gerenciarCicloTelas(1); 
             }
         };
 
@@ -541,22 +383,23 @@
                 let alcancadoGlobal = 0;
                 let alcancadoFenix = 0;
                 let alcancadoTitans = 0;
-                let alcancadoThunderMonsters = 0;
+                let alcancadoThunderbirds = 0; // Separada!
+                let alcancadoMonsters = 0; // Separada!
                 let dadosTicker = [];
 
                 snapshot.forEach((doc) => {
                     const v = doc.data();
                     
-                    // --- REMOVIDO "Aguardando Pgt Entrada" das exclusões ---
                     if (v.status === 'Venda Perdida/Cancelada' || v.status === 'Aguardando Validação') return;
 
                     let vgv = Number(v.vgv) || 0;
                     alcancadoGlobal += vgv;
 
-                    // --- EQUIPES UNIFICADAS AQUI ---
+                    // Cada equipe soma o seu próprio saldo separadamente
                     if (v.equipe === 'Fenix') alcancadoFenix += vgv;
                     else if (v.equipe === 'Titans') alcancadoTitans += vgv;
-                    else if (v.equipe === 'Thunderbirds' || v.equipe === "Monster's") alcancadoThunderMonsters += vgv;
+                    else if (v.equipe === 'Thunderbirds') alcancadoThunderbirds += vgv;
+                    else if (v.equipe === "Monster's") alcancadoMonsters += vgv;
 
                     dadosTicker.push({
                         corretor: v.corretor ? v.corretor.split(' ')[0] : 'Consultor',
@@ -565,28 +408,58 @@
                     });
                 });
 
-                atualizarTela(alcancadoGlobal, alcancadoFenix, alcancadoTitans, alcancadoThunderMonsters);
+                atualizarTela(alcancadoGlobal, alcancadoFenix, alcancadoTitans, alcancadoThunderbirds, alcancadoMonsters);
                 atualizarTicker(dadosTicker);
             });
         }
 
-        function atualizarTela(global, fenix, titans, thunderMonsters) {
+        // Recebe os 5 parâmetros exatos separados!
+        function atualizarTela(global, fenix, titans, thunderbirds, monsters) {
             ultimoAlcancadoGlobal = global;
 
             document.getElementById('lblAlcancadoGlobal').innerText = fmtMoeda(global);
-            document.getElementById('lblAlcancadoFenix').innerText = fmtMoeda(fenix);
-            document.getElementById('lblAlcancadoTitans').innerText = fmtMoeda(titans);
-            document.getElementById('lblAlcancadoThunderMonsters').innerText = fmtMoeda(thunderMonsters);
-
             atualizarBarraGlobal();
 
-            const pctFenix = global > 0 ? (fenix / global) * 100 : 0;
-            const pctTitans = global > 0 ? (titans / global) * 100 : 0;
-            const pctThunderMonsters = global > 0 ? (thunderMonsters / global) * 100 : 0;
+            // Mapeamento individualizado das 4 equipes Citroni
+            const equipesCitroni = [
+                { nome: "FÊNIX", valor: fenix, icone: "🔥", borderStyle: "rgba(220, 53, 69, 0.4)", barClass: "bg-danger" },
+                { nome: "TITANS", valor: titans, icone: "⚡", borderStyle: "rgba(13, 110, 253, 0.4)", barClass: "bg-primary" },
+                { nome: "THUNDERBIRDS", valor: thunderbirds, icone: "🦅", borderStyle: "rgba(254, 159, 6, 0.4)", barClass: "bg-warning text-dark" },
+                { nome: "MONSTER'S", valor: monsters, icone: "👾", borderStyle: "rgba(25, 135, 84, 0.4)", barClass: "bg-success" }
+            ];
 
-            atualizarBarra('barFenix', pctFenix);
-            atualizarBarra('barTitans', pctTitans);
-            atualizarBarra('barThunderMonsters', pctThunderMonsters);
+            // Filtra as equipes para mostrar APENAS quem tem valor > 0
+            const equipesAtivas = equipesCitroni.filter(eq => eq.valor > 0);
+            
+            const gridContainer = document.getElementById('gridEquipesDinamico');
+            gridContainer.innerHTML = ''; // Limpa a tela antes de desenhar
+
+            // Se nenhuma equipe vendeu nada, mostra um aviso
+            if (equipesAtivas.length === 0) {
+                gridContainer.innerHTML = `<div class="text-muted fw-bold py-5 mx-auto" style="font-size: 3vh;">Aguardando o registro de novos contratos pelas equipes...</div>`;
+                return;
+            }
+
+            // Calcula a largura da coluna no Bootstrap (Divide o grid de 12 por quantas equipes estão ativas)
+            let tamanhoColuna = Math.floor(12 / equipesAtivas.length);
+            if (tamanhoColuna < 3) tamanhoColuna = 3; // Segurança pra não espremer demais
+
+            // Desenha os cards apenas das equipes que venderam
+            equipesAtivas.forEach(eq => {
+                const porcentagemEquipe = global > 0 ? (eq.valor / global) * 100 : 0;
+                
+                gridContainer.innerHTML += `
+                    <div class="col-md-${tamanhoColuna} col-12">
+                        <div class="card-equipe" style="border-color: ${eq.borderStyle};">
+                            <h5 class="fw-bold m-0 text-uppercase" style="letter-spacing: 1px; color: #2c3e50;">${eq.icone} ${eq.nome}</h5>
+                            <div class="text-dark fw-bold valor-equipe">R$ ${fmtMoeda(eq.valor)}</div>
+                            <div class="progress progress-equipe">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated ${eq.barClass} fw-bold" style="width: ${porcentagemEquipe}%;">${porcentagemEquipe.toFixed(1)}%</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
         }
 
         function atualizarBarraGlobal() {
