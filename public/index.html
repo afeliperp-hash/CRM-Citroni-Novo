@@ -7423,40 +7423,93 @@ window.gerarImpressaoAuthMult = async function() {
     // MÓDULO: NOTAS FISCAIS
     // ==========================================
     window.adicionarItemNota = function(item = {}) {
-        const container = document.getElementById('containerItensNota');
-        const div = document.createElement('div');
-        div.className = 'row g-2 mb-2 align-items-end item-nota-row';
+        const container = document.getElementById('containerItensNota');
+        const div = document.createElement('div');
+        div.className = 'row g-2 mb-2 align-items-end item-nota-row';
 
-        let optionsVendas = '<option value="">Selecione a Venda...</option>';
-        vendasCadastradasCache.forEach(v => {
-            const idVisual = v.codigoVenda || v.id.substring(0, 6).toUpperCase();
-            let selected = (item.vendaId === v.id) ? 'selected' : '';
-            optionsVendas += `<option value="${v.id}" data-visual="${idVisual}" ${selected}>${idVisual} - ${v.produto || 'S/N'}</option>`;
-        });
+        let optionsVendas = '<option value="">Selecione a Venda...</option>';
+        vendasCadastradasCache.forEach(v => {
+            const idVisual = v.codigoVenda || v.id.substring(0, 6).toUpperCase();
+            let selected = (item.vendaId === v.id) ? 'selected' : '';
+            optionsVendas += `<option value="${v.id}" data-visual="${idVisual}" ${selected}>${idVisual} - ${v.produto || 'S/N'}</option>`;
+        });
 
-        div.innerHTML = `
-            <div class="col-md-5">
-                <label class="form-label text-muted" style="font-size:0.7rem;">Venda</label>
-                <select class="form-select form-select-sm item-venda">${optionsVendas}</select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label text-muted" style="font-size:0.7rem;">Tipo de Lançamento</label>
-                <select class="form-select form-select-sm item-tipo">
-                    <option value="Comissão de Venda" ${item.tipo === 'Comissão de Venda' ? 'selected' : ''}>Comissão de Venda</option>
-                    <option value="Premiação" ${item.tipo === 'Premiação' ? 'selected' : ''}>Premiação</option>
-                    <option value="Outros" ${item.tipo === 'Outros' ? 'selected' : ''}>Outros</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label text-muted" style="font-size:0.7rem;">Vlr Bruto</label>
-                <input type="text" class="form-control form-control-sm item-bruto" value="${item.bruto ? Number(item.bruto).toLocaleString('pt-BR', {minimumFractionDigits: 2}) : ''}" oninput="aplicarMascaraMoeda(event); calcularNotaLiquido()">
-            </div>
-            <div class="col-md-1 text-end">
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.item-nota-row').remove(); calcularNotaLiquido();">X</button>
-            </div>
-        `;
-        container.appendChild(div);
-    }
+        // Se for edição, mantém o beneficiário salvo. Se não, deixa a opção padrão.
+        let optionBeneficiarioAtual = item.beneficiario 
+            ? `<option value="${item.beneficiario}" selected>${item.beneficiario}</option>` 
+            : `<option value="">Selecione a Venda primeiro...</option>`;
+
+        div.innerHTML = `
+            <div class="col-md-3">
+                <label class="form-label text-muted" style="font-size:0.7rem;">Venda</label>
+                <select class="form-select form-select-sm item-venda border-primary" onchange="window.atualizarBeneficiariosParaNota(this)">${optionsVendas}</select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted" style="font-size:0.7rem;">Beneficiário</label>
+                <select class="form-select form-select-sm item-beneficiario border-success">
+                    ${optionBeneficiarioAtual}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-muted" style="font-size:0.7rem;">Tipo</label>
+                <select class="form-select form-select-sm item-tipo">
+                    <option value="Comissão de Venda" ${item.tipo === 'Comissão de Venda' ? 'selected' : ''}>Comissão</option>
+                    <option value="Premiação" ${item.tipo === 'Premiação' ? 'selected' : ''}>Prêmio</option>
+                    <option value="Outros" ${item.tipo === 'Outros' ? 'selected' : ''}>Outros</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted" style="font-size:0.7rem;">Vlr Bruto</label>
+                <input type="text" class="form-control form-control-sm item-bruto" value="${item.bruto ? Number(item.bruto).toLocaleString('pt-BR', {minimumFractionDigits: 2}) : ''}" oninput="window.aplicarMascaraMoeda(event); window.calcularNotaLiquido()">
+            </div>
+            <div class="col-md-1 text-end">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.item-nota-row').remove(); window.calcularNotaLiquido();">X</button>
+            </div>
+        `;
+        container.appendChild(div);
+
+        // Se for edição e não tiver beneficiário carregado, força a atualização da lista
+        if (item.vendaId && !item.beneficiario) {
+            const selectVendaCriado = div.querySelector('.item-venda');
+            window.atualizarBeneficiariosParaNota(selectVendaCriado);
+        }
+    }
+
+    // ========================================================
+    // NOVA FUNÇÃO: Atualiza os beneficiários quando a venda é escolhida na NF
+    // ========================================================
+    window.atualizarBeneficiariosParaNota = function(selectVenda) {
+        const linha = selectVenda.closest('.item-nota-row');
+        const selBenef = linha.querySelector('.item-beneficiario');
+        const vendaId = selectVenda.value;
+        
+        if (!vendaId) {
+            selBenef.innerHTML = '<option value="">Selecione a Venda primeiro...</option>';
+            return;
+        }
+
+        const venda = vendasCadastradasCache.find(v => v.id === vendaId);
+
+        selBenef.innerHTML = '<option value="">Selecione quem recebe...</option>';
+        if (venda) {
+            // Monta a lista pegando quem faz parte da venda
+            let bens = [
+                venda.corretor, 
+                venda.gerente, 
+                venda.imobiliaria, 
+                venda.nomeParceria, 
+                venda.nomeCadastro,
+                venda.temDiretoria !== 'Não' ? venda.temDiretoria : null
+            ].filter(n => n && n.trim() !== ''); // Filtra vazios e nulls
+
+            // Remove nomes duplicados (ex: se o corretor também for o captador)
+            let bensUnicos = [...new Set(bens)];
+
+            bensUnicos.forEach(b => {
+                selBenef.innerHTML += `<option value="${b}">${b}</option>`;
+            });
+        }
+    }
 
     window.mostrarFormNotas = function() {
         document.getElementById('telaListagemNotas').classList.add('d-none');
