@@ -6767,6 +6767,10 @@ window.imprimirMemoriaCalculo = function(beneficiario) {
 
             if (nfsDaVenda.length > 0) {
                 usaNf = true;
+                
+                // MÁGICA 1: Captura a alíquota da NF para aplicar proporcionalmente aos Prêmios
+                impostoVisual = parseFloat(nfsDaVenda[0].percImp) || 0;
+
                 nfsDaVenda.forEach(nf => {
                     if (nf.itens && nf.itens.length > 0) {
                         let itemVenda = nf.itens.find(i => i.vendaId === v.id || (i.vendaVisual && i.vendaVisual.trim().toUpperCase() === idVisual));
@@ -6787,7 +6791,23 @@ window.imprimirMemoriaCalculo = function(beneficiario) {
             const addProvisao = (tipoBen, nomeBen, percRateio, vlrAbsoluto, tipoRepasse = 'Comissão') => {
                 if (!nomeBen) return;
                 
-                let valorDevido = tipoRepasse === 'Comissão' ? baseRateio * (Number(percRateio) / 100) : Number(vlrAbsoluto) || 0;
+                let valorDevido = 0;
+                
+                // MÁGICA 2: Ajuste contábil inteligente
+                if (tipoRepasse === 'Comissão' && Number(percRateio) > 0) {
+                    valorDevido = baseRateio * (Number(percRateio) / 100);
+                } else {
+                    // Trata Prêmios e Parcerias (Valores Fixos Absolutos)
+                    let valBruto = Number(vlrAbsoluto) || 0;
+                    
+                    if (usaNf) {
+                        // Desconta o imposto da NF no prêmio para igualar ao líquido e anular o "AJUSTE"
+                        valorDevido = valBruto - (valBruto * (impostoVisual / 100));
+                    } else {
+                        valorDevido = valBruto; 
+                    }
+                }
+
                 if (valorDevido <= 0) return;
 
                 let key = `${v.id}_${tipoBen}_${tipoRepasse}`;
@@ -6809,7 +6829,6 @@ window.imprimirMemoriaCalculo = function(beneficiario) {
                 });
             };
 
-            // MODIFICAÇÃO: Corretor não gera provisões!
             if (window.usuarioLogado.perfil !== 'Corretor') {
                 if (v.percCorretor > 0) addProvisao('Corretor', v.corretor, v.percCorretor, 0, 'Comissão');
                 if (v.premioCorretor > 0) addProvisao('Corretor', v.corretor, 0, v.premioCorretor, 'Prêmio');
@@ -6882,7 +6901,6 @@ window.imprimirMemoriaCalculo = function(beneficiario) {
                 }
             } else {
                 if (window.usuarioLogado.perfil === 'Corretor') {
-                    // MODIFICAÇÃO: Corretor só vê o botão da Memória de Cálculo aqui!
                     botoesInternos = `${botaoMemoria}`;
                 } else {
                     botoesInternos = `
