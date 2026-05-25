@@ -46,7 +46,8 @@
         .form-control:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
 
         /* TABELAS COMPACTAS */
-        .table-responsive { border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        /* TABELAS COMPACTAS */
+        .table-responsive { border-radius: 12px; overflow-x: auto; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .table thead th { background-color: #f8fafc; color: #475569; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 12px; border-bottom: 2px solid #e2e8f0; }
         .table tbody td { padding: 10px 12px; vertical-align: middle; border-bottom: 1px solid #f1f5f9; }
         
@@ -1884,16 +1885,16 @@
                     <div class="table-responsive">
                         <table class="table table-hover mb-0 align-middle" style="font-size: 0.85rem;">
                             <thead class="table-light text-secondary">
-                            <tr>
-                                <th class="ps-4">ID</th>
-                                <th>PRODUTO</th>
-                                <th>TIPO</th>
-                                <th>PREVISTO TOTAL</th>
-                                <th>JÁ FATURADO</th>
-                                <th>SALDO RESTANTE</th>
-                                <th>BENEFICIÁRIO</th> <th width="200" class="text-danger fw-bold text-center pe-4">A FATURAR (R$)</th>
-                            </tr>
-                        </thead>
+                                <tr>
+                                    <th class="ps-4">ID</th>
+                                    <th>PRODUTO</th>
+                                    <th>TIPO</th>
+                                    <th>PREVISTO TOTAL</th>
+                                    <th>JÁ FATURADO</th>
+                                    <th>SALDO RESTANTE</th>
+                                    <th width="200" class="text-danger fw-bold text-center pe-4">A FATURAR (R$)</th>
+                                </tr>
+                            </thead>
                             <tbody id="tabelaItensPedido">
                                 <tr><td colspan="7" class="text-center text-muted py-5">Selecione as vendas acima para carregar a prestação de contas.</td></tr>
                             </tbody>
@@ -2494,10 +2495,9 @@ window.processarTrocaSenha = async function() {
         document.getElementById('card-inicio-metas')?.classList.remove('d-none');
     }
     
-    // Se for Corretor ou Diretoria, esconde os botões de "+ Novo", "Salvar" e "Excluir"
+    // Se for Corretor ou Diretoria, esconde os grandes botões de "+ Novo", "Salvar" e "Excluir"
     if (p === 'Corretor' || p === 'Diretoria') {
         document.querySelectorAll('.btn-success, .btn-danger, .btn-primary').forEach(btn => {
-            // CORREÇÃO: O texto correto do botão no HTML é 'Gerar Relatório'
             if (!btn.hasAttribute('data-bs-toggle') && !btn.innerHTML.includes('bi-search') && !btn.innerHTML.includes('Gerar Relatório') && btn.id !== 'btnEntrar') {
                 btn.classList.add('d-none');
             }
@@ -2508,12 +2508,12 @@ window.processarTrocaSenha = async function() {
     // REGRAS DE SEGURANÇA PARA GERENTE
     // ==========================================
     if (p === 'Gerente') {
-        // 1. Esconde abas do menu lateral (Aba Relatórios agora é PERMITIDA)
+        // 1. Esconde abas do menu lateral
         document.getElementById('tab-imobiliarias')?.classList.add('d-none');
         document.getElementById('tab-pessoas')?.classList.add('d-none');
         document.getElementById('tab-notas')?.classList.add('d-none');
         
-        // 2. Esconde os grandes botões (Cards) da Tela Inicial (Card Relatórios agora é PERMITIDO)
+        // 2. Esconde os grandes botões (Cards) da Tela Inicial
         document.getElementById('card-inicio-imobiliarias')?.classList.add('d-none');
         document.getElementById('card-inicio-pessoas')?.classList.add('d-none');
         document.getElementById('card-inicio-notas')?.classList.add('d-none');
@@ -2561,13 +2561,13 @@ window.processarTrocaSenha = async function() {
         const selectRelatorio = document.getElementById('tipoRelatorio');
         if (selectRelatorio) {
             const relatoriosPermitidosGerente = ['vendas_status', 'ranking_qtde', 'ranking_vgv', 'relatorio_colaboradores', 'informe_rendimentos'];
-            Array.from(selectRelatorio.options).forEach(opt => {
+            Array.from(selectRelatorio.querySelectorAll('option')).forEach(opt => {
                 if (!relatoriosPermitidosGerente.includes(opt.value)) {
                     opt.disabled = true;
                     opt.classList.add('d-none');
                 }
             });
-            selectRelatorio.value = 'vendas_status'; // Define o padrão permitido
+            selectRelatorio.value = 'vendas_status'; 
         }
 
         // 7. TRAVAR FILTROS DE EQUIPE/GERENTE
@@ -2583,7 +2583,7 @@ window.processarTrocaSenha = async function() {
             filtroGerente.classList.add('bg-light');
         }
     }
-    
+
     // ==========================================
     // REGRAS DE SEGURANÇA PARA CORRETOR
     // ==========================================
@@ -2600,10 +2600,17 @@ window.processarTrocaSenha = async function() {
         document.getElementById('card-inicio-imobiliarias')?.classList.add('d-none');
         document.getElementById('card-inicio-pessoas')?.classList.add('d-none');
         
+        // >>> REGRA: Esconde os botões extras da aba de Repasses <<<
+        document.querySelector('button[onclick="abrirModalRepasseAvulso()"]')?.classList.add('d-none');
+        document.querySelector('button[onclick="abrirModalAutorizacaoRepasse()"]')?.classList.add('d-none');
+        
+        // >>> REGRA: Filtra Relatórios do Corretor <<<
         const selectRelatorio = document.getElementById('tipoRelatorio');
         if (selectRelatorio) {
-            const relatoriosPermitidosCorretor = ['vendas_status', 'ranking_vgv', 'informe_rendimentos'];
-            Array.from(selectRelatorio.options).forEach(opt => {
+            const relatoriosPermitidosCorretor = ['vendas_status', 'informe_rendimentos'];
+            
+            // Avalia todas as <options> individualmente
+            Array.from(selectRelatorio.querySelectorAll('option')).forEach(opt => {
                 if (!relatoriosPermitidosCorretor.includes(opt.value)) {
                     opt.disabled = true;
                     opt.classList.add('d-none');
@@ -2612,17 +2619,34 @@ window.processarTrocaSenha = async function() {
                     opt.classList.remove('d-none');
                 }
             });
-            selectRelatorio.value = 'ranking_vgv'; 
+            
+            // Avalia as categorias (<optgroup>). CORREÇÃO FEITA AQUI (querySelectorAll em vez de options)
+            Array.from(selectRelatorio.querySelectorAll('optgroup')).forEach(grp => {
+                const todasOptionsDoGrupo = Array.from(grp.querySelectorAll('option'));
+                const todasDesativadas = todasOptionsDoGrupo.every(opt => opt.disabled);
+                
+                if (todasDesativadas) {
+                    grp.classList.add('d-none');
+                } else {
+                    grp.classList.remove('d-none');
+                }
+            });
+            
+            selectRelatorio.value = 'vendas_status'; 
         }
 
+        // >>> REGRA: Esconde os filtros do topo da tela de relatórios (Corrigido para col-md-3) <<<
         const filtroBeneficiario = document.getElementById('filtroBeneficiario');
-        if (filtroBeneficiario) filtroBeneficiario.closest('.col-md-4')?.classList.add('d-none');
+        if (filtroBeneficiario) filtroBeneficiario.closest('.col-md-3')?.classList.add('d-none');
+        
         const filtroEquipe = document.getElementById('filtroRelEquipe');
-        if (filtroEquipe) filtroEquipe.closest('.col-md-4')?.classList.add('d-none');
+        if (filtroEquipe) filtroEquipe.closest('.col-md-3')?.classList.add('d-none');
+        
         const filtroGerente = document.getElementById('filtroRelGerente');
-        if (filtroGerente) filtroGerente.closest('.col-md-4')?.classList.add('d-none');
+        if (filtroGerente) filtroGerente.closest('.col-md-3')?.classList.add('d-none');
+        
         const filtroCorretor = document.getElementById('filtroRelCorretor');
-        if (filtroCorretor) filtroCorretor.closest('.col-md-4')?.classList.add('d-none');
+        if (filtroCorretor) filtroCorretor.closest('.col-md-3')?.classList.add('d-none');
     }
 }
 
@@ -6740,11 +6764,10 @@ window.imprimirMemoriaCalculo = function(beneficiario) {
             return;
         }
 
-        // MÁGICA: Mapeia o que já foi efetivado olhando EXATAMENTE para o Beneficiário
         let faturadoMap = {};
         repassesDB.forEach(r => {
             if (r.status !== 'Cancelado' && r.status !== 'Provisão') {
-                let key = `${r.vendaId}_${r.beneficiario}_${r.tipo}`;
+                let key = `${r.vendaId}_${r.tipoBeneficiario}_${r.tipo}`;
                 let grossEquivalent = Number(r.bruto) || 0;
                 faturadoMap[key] = (faturadoMap[key] || 0) + grossEquivalent;
             }
@@ -6755,61 +6778,108 @@ window.imprimirMemoriaCalculo = function(beneficiario) {
         vendasDB.forEach(v => {
             const idVisual = v.codigoVenda || v.id.substring(0, 6).toUpperCase();
             
-            // FUNÇÃO BLINDADA: Puxa o valor absoluto salvo na Venda, ignorando matemáticas complexas
-            const addProvisao = (tipoBen, nomeBen, vlrAbsolutoEsperado, tipoRepasse = 'Comissão') => {
+            let nfsDaVenda = notasDB.filter(n => {
+                if (n.status === 'NF Cancelada') return false;
+                const temNaRaiz = (n.vendaId === v.id) || (n.vendaVisual && n.vendaVisual.trim().toUpperCase() === idVisual);
+                const temNoItem = n.itens && n.itens.some(item => (item.vendaId === v.id) || (item.vendaVisual && item.vendaVisual.trim().toUpperCase() === idVisual));
+                return temNaRaiz || temNoItem;
+            });
+
+            let baseRateio = 0;
+            let impostoVisual = 0;
+            let usaNf = false;
+
+            if (nfsDaVenda.length > 0) {
+                usaNf = true;
+                
+                // MÁGICA 1: Captura a alíquota da NF para aplicar proporcionalmente aos Prêmios
+                impostoVisual = parseFloat(nfsDaVenda[0].percImp) || 0;
+
+                nfsDaVenda.forEach(nf => {
+                    if (nf.itens && nf.itens.length > 0) {
+                        let itemVenda = nf.itens.find(i => i.vendaId === v.id || (i.vendaVisual && i.vendaVisual.trim().toUpperCase() === idVisual));
+                        if (itemVenda && Number(nf.brutoTotal) > 0) {
+                            let proporcao = (Number(itemVenda.bruto) || 0) / Number(nf.brutoTotal);
+                            baseRateio += (Number(nf.liquidoTotal) || 0) * proporcao;
+                        }
+                    } else {
+                        baseRateio += Number(nf.liquidoTotal) || 0;
+                    }
+                });
+            } else {
+                impostoVisual = v.imobiliaria ? (imobTaxMap[v.imobiliaria] || 0) : 0;
+                let deducoes = (v.temParceria === 'Sim' ? Number(v.vlrParceria) : 0) + (v.pagaCadastro === 'Sim' ? Number(v.vlrCadastro) : 0);
+                baseRateio = (Number(v.vlrComissao) || 0) - deducoes;
+            }
+
+            const addProvisao = (tipoBen, nomeBen, percRateio, vlrAbsoluto, tipoRepasse = 'Comissão') => {
                 if (!nomeBen) return;
                 
-                let valorDevido = Number(vlrAbsolutoEsperado) || 0;
+                let valorDevido = 0;
+                
+                // MÁGICA 2: Ajuste contábil inteligente
+                if (tipoRepasse === 'Comissão' && Number(percRateio) > 0) {
+                    valorDevido = baseRateio * (Number(percRateio) / 100);
+                } else {
+                    // Trata Prêmios e Parcerias (Valores Fixos Absolutos)
+                    let valBruto = Number(vlrAbsoluto) || 0;
+                    
+                    if (usaNf) {
+                        // Desconta o imposto da NF no prêmio para igualar ao líquido e anular o "AJUSTE"
+                        valorDevido = valBruto - (valBruto * (impostoVisual / 100));
+                    } else {
+                        valorDevido = valBruto; 
+                    }
+                }
+
                 if (valorDevido <= 0) return;
 
-                let key = `${v.id}_${nomeBen}_${tipoRepasse}`;
+                let key = `${v.id}_${tipoBen}_${tipoRepasse}`;
                 let faturado = faturadoMap[key] || 0;
                 let saldo = valorDevido - faturado;
 
                 if (saldo < 0.05) saldo = 0; 
                 if (saldo <= 0) return; 
                 
-                // Se for a Imobiliária Principal, já puxa o imposto do cadastro dela
-                let impostoVisual = (tipoBen === 'Imobiliária') ? (imobTaxMap[nomeBen] || 0) : 0;
+                let liquidoCalc = usaNf ? saldo : saldo - (saldo * (impostoVisual / 100));
 
                 todasLinhas.push({
                     isVirtual: true, vendaId: v.id, vendaVisual: idVisual, tipo: tipoRepasse, 
                     beneficiario: nomeBen, tipoBeneficiario: tipoBen, 
-                    bruto: saldo, percImp: impostoVisual, liquido: saldo, // O líquido real é calculado só na hora de faturar
+                    bruto: saldo, percImp: impostoVisual, liquido: liquidoCalc, 
                     dataPrev: '', status: 'Provisão',
                     produto: v.produto || '', unidade: (v.unidades && v.unidades.length > 0) ? v.unidades.join(', ') : (v.unidade || '-'),
-                    usaNf: false 
+                    usaNf: usaNf 
                 });
             };
 
             if (window.usuarioLogado.perfil !== 'Corretor') {
-                addProvisao('Corretor', v.corretor, v.vlrCorretor, 'Comissão');
-                addProvisao('Corretor', v.corretor, v.premioCorretor, 'Prêmio');
+                if (v.percCorretor > 0) addProvisao('Corretor', v.corretor, v.percCorretor, 0, 'Comissão');
+                if (v.premioCorretor > 0) addProvisao('Corretor', v.corretor, 0, v.premioCorretor, 'Prêmio');
 
                 if (window.usuarioLogado.perfil !== 'Gerente') {
-                    addProvisao('Gerente', v.gerente, v.vlrGerente, 'Comissão');
-                    addProvisao('Gerente', v.gerente, v.premioGerente, 'Prêmio');
+                    if (v.percGerente > 0) addProvisao('Gerente', v.gerente, v.percGerente, 0, 'Comissão');
+                    if (v.premioGerente > 0) addProvisao('Gerente', v.gerente, 0, v.premioGerente, 'Prêmio');
                     
                     if (v.temDiretoria && v.temDiretoria !== 'Não') {
-                        addProvisao('Diretoria', v.temDiretoria, v.vlrDiretoria, 'Comissão');
-                        addProvisao('Diretoria', v.temDiretoria, v.premioDiretoria, 'Prêmio');
+                        addProvisao('Diretoria', v.temDiretoria, v.percDiretoria, 0, 'Comissão');
+                        if (v.premioDiretoria > 0) addProvisao('Diretoria', v.temDiretoria, 0, v.premioDiretoria, 'Prêmio');
                     }
-                    if (v.temRateioExtra === 'Sim') addProvisao('Parceiro', v.nomeRateioExtra, v.vlrExtra, 'Comissão');
-                    if (v.temParceria === 'Sim') addProvisao('Parceiro', v.nomeParceria, v.vlrParceria, 'Parceria');
-                    if (v.pagaCadastro === 'Sim') addProvisao('Captador', v.nomeCadastro, v.vlrCadastro, 'Outros');
+                    if (v.temRateioExtra === 'Sim') addProvisao('Parceiro', v.nomeRateioExtra, 0, v.vlrExtra, 'Comissão');
+                    if (v.temParceria === 'Sim') addProvisao('Parceiro', v.nomeParceria, 0, v.vlrParceria, 'Parceria');
+                    if (v.pagaCadastro === 'Sim') addProvisao('Captador', v.nomeCadastro, 0, v.vlrCadastro, 'Outros');
                     if (v.imobiliaria) {
-                        addProvisao('Imobiliária', v.imobiliaria, v.vlrImob, 'Comissão');
-                        addProvisao('Imobiliária', v.imobiliaria, v.premioImob, 'Prêmio');
+                        addProvisao('Imobiliária', v.imobiliaria, v.percImob, 0, 'Comissão');
+                        if (v.premioImob > 0) addProvisao('Imobiliária', v.imobiliaria, 0, v.premioImob, 'Prêmio');
                     }
                 } else {
-                     addProvisao('Gerente', v.gerente, v.vlrGerente, 'Comissão');
-                     addProvisao('Gerente', v.gerente, v.premioGerente, 'Prêmio');
+                     if (v.percGerente > 0) addProvisao('Gerente', v.gerente, v.percGerente, 0, 'Comissão');
+                     if (v.premioGerente > 0) addProvisao('Gerente', v.gerente, 0, v.premioGerente, 'Prêmio');
                 }
             }
         });
 
         repassesDB.forEach(r => { if (r.status !== 'Provisão') todasLinhas.push(r); });
-        
         todasLinhas.sort((a, b) => {
             if (a.vendaVisual > b.vendaVisual) return 1;
             if (a.vendaVisual < b.vendaVisual) return -1;
@@ -6870,7 +6940,11 @@ window.imprimirMemoriaCalculo = function(beneficiario) {
             
             let impostoFormatado = '';
             if (r.isVirtual) {
-                impostoFormatado = `<span class="text-warning text-dark fw-bold" title="A definir na hora do faturamento">${r.percImp ? String(r.percImp).replace('.', ',') : '0'}% ⏳</span>`;
+                if (r.usaNf) {
+                    impostoFormatado = `<span class="badge bg-success-subtle text-success border border-success" title="Imposto já descontado na emissão da NF. Defina o percentual no Faturamento">Pendente NF ⏳</span>`;
+                } else {
+                    impostoFormatado = `<span class="text-warning text-dark fw-bold" title="A definir na hora do faturamento">${r.percImp ? String(r.percImp).replace('.', ',') : '0'}% ⏳</span>`;
+                }
             } else {
                 impostoFormatado = r.percImp ? String(r.percImp).replace('.', ',') + '%' : '0%';
             }
@@ -7373,93 +7447,40 @@ window.gerarImpressaoAuthMult = async function() {
     // MÓDULO: NOTAS FISCAIS
     // ==========================================
     window.adicionarItemNota = function(item = {}) {
-        const container = document.getElementById('containerItensNota');
-        const div = document.createElement('div');
-        div.className = 'row g-2 mb-2 align-items-end item-nota-row';
+        const container = document.getElementById('containerItensNota');
+        const div = document.createElement('div');
+        div.className = 'row g-2 mb-2 align-items-end item-nota-row';
 
-        let optionsVendas = '<option value="">Selecione a Venda...</option>';
-        vendasCadastradasCache.forEach(v => {
-            const idVisual = v.codigoVenda || v.id.substring(0, 6).toUpperCase();
-            let selected = (item.vendaId === v.id) ? 'selected' : '';
-            optionsVendas += `<option value="${v.id}" data-visual="${idVisual}" ${selected}>${idVisual} - ${v.produto || 'S/N'}</option>`;
-        });
+        let optionsVendas = '<option value="">Selecione a Venda...</option>';
+        vendasCadastradasCache.forEach(v => {
+            const idVisual = v.codigoVenda || v.id.substring(0, 6).toUpperCase();
+            let selected = (item.vendaId === v.id) ? 'selected' : '';
+            optionsVendas += `<option value="${v.id}" data-visual="${idVisual}" ${selected}>${idVisual} - ${v.produto || 'S/N'}</option>`;
+        });
 
-        // Se for edição, mantém o beneficiário salvo. Se não, deixa a opção padrão.
-        let optionBeneficiarioAtual = item.beneficiario 
-            ? `<option value="${item.beneficiario}" selected>${item.beneficiario}</option>` 
-            : `<option value="">Selecione a Venda primeiro...</option>`;
-
-        div.innerHTML = `
-            <div class="col-md-3">
-                <label class="form-label text-muted" style="font-size:0.7rem;">Venda</label>
-                <select class="form-select form-select-sm item-venda border-primary" onchange="window.atualizarBeneficiariosParaNota(this)">${optionsVendas}</select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label text-muted" style="font-size:0.7rem;">Beneficiário</label>
-                <select class="form-select form-select-sm item-beneficiario border-success">
-                    ${optionBeneficiarioAtual}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label text-muted" style="font-size:0.7rem;">Tipo</label>
-                <select class="form-select form-select-sm item-tipo">
-                    <option value="Comissão de Venda" ${item.tipo === 'Comissão de Venda' ? 'selected' : ''}>Comissão</option>
-                    <option value="Premiação" ${item.tipo === 'Premiação' ? 'selected' : ''}>Prêmio</option>
-                    <option value="Outros" ${item.tipo === 'Outros' ? 'selected' : ''}>Outros</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label text-muted" style="font-size:0.7rem;">Vlr Bruto</label>
-                <input type="text" class="form-control form-control-sm item-bruto" value="${item.bruto ? Number(item.bruto).toLocaleString('pt-BR', {minimumFractionDigits: 2}) : ''}" oninput="window.aplicarMascaraMoeda(event); window.calcularNotaLiquido()">
-            </div>
-            <div class="col-md-1 text-end">
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.item-nota-row').remove(); window.calcularNotaLiquido();">X</button>
-            </div>
-        `;
-        container.appendChild(div);
-
-        // Se for edição e não tiver beneficiário carregado, força a atualização da lista
-        if (item.vendaId && !item.beneficiario) {
-            const selectVendaCriado = div.querySelector('.item-venda');
-            window.atualizarBeneficiariosParaNota(selectVendaCriado);
-        }
-    }
-
-    // ========================================================
-    // NOVA FUNÇÃO: Atualiza os beneficiários quando a venda é escolhida na NF
-    // ========================================================
-    window.atualizarBeneficiariosParaNota = function(selectVenda) {
-        const linha = selectVenda.closest('.item-nota-row');
-        const selBenef = linha.querySelector('.item-beneficiario');
-        const vendaId = selectVenda.value;
-        
-        if (!vendaId) {
-            selBenef.innerHTML = '<option value="">Selecione a Venda primeiro...</option>';
-            return;
-        }
-
-        const venda = vendasCadastradasCache.find(v => v.id === vendaId);
-
-        selBenef.innerHTML = '<option value="">Selecione quem recebe...</option>';
-        if (venda) {
-            // Monta a lista pegando quem faz parte da venda
-            let bens = [
-                venda.corretor, 
-                venda.gerente, 
-                venda.imobiliaria, 
-                venda.nomeParceria, 
-                venda.nomeCadastro,
-                venda.temDiretoria !== 'Não' ? venda.temDiretoria : null
-            ].filter(n => n && n.trim() !== ''); // Filtra vazios e nulls
-
-            // Remove nomes duplicados (ex: se o corretor também for o captador)
-            let bensUnicos = [...new Set(bens)];
-
-            bensUnicos.forEach(b => {
-                selBenef.innerHTML += `<option value="${b}">${b}</option>`;
-            });
-        }
-    }
+        div.innerHTML = `
+            <div class="col-md-5">
+                <label class="form-label text-muted" style="font-size:0.7rem;">Venda</label>
+                <select class="form-select form-select-sm item-venda">${optionsVendas}</select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted" style="font-size:0.7rem;">Tipo de Lançamento</label>
+                <select class="form-select form-select-sm item-tipo">
+                    <option value="Comissão de Venda" ${item.tipo === 'Comissão de Venda' ? 'selected' : ''}>Comissão de Venda</option>
+                    <option value="Premiação" ${item.tipo === 'Premiação' ? 'selected' : ''}>Premiação</option>
+                    <option value="Outros" ${item.tipo === 'Outros' ? 'selected' : ''}>Outros</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted" style="font-size:0.7rem;">Vlr Bruto</label>
+                <input type="text" class="form-control form-control-sm item-bruto" value="${item.bruto ? Number(item.bruto).toLocaleString('pt-BR', {minimumFractionDigits: 2}) : ''}" oninput="aplicarMascaraMoeda(event); calcularNotaLiquido()">
+            </div>
+            <div class="col-md-1 text-end">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.item-nota-row').remove(); calcularNotaLiquido();">X</button>
+            </div>
+        `;
+        container.appendChild(div);
+    }
 
     window.mostrarFormNotas = function() {
         document.getElementById('telaListagemNotas').classList.add('d-none');
@@ -7739,25 +7760,18 @@ window.carregarNotas = async function() {
 
     window.salvarNotaFirebase = async function() {
     const btn = document.getElementById('btnSalvarNota');
-    const originalText = btn.innerHTML;
     btn.innerHTML = "⏳ Salvando..."; btn.disabled = true;
     try {
-        // Varre o carrinho interno do formulário manual
+        // Varre o carrinho interno
         const itensNodes = document.querySelectorAll('.item-nota-row');
         let itensArray = [];
         itensNodes.forEach(node => {
             const selVenda = node.querySelector('.item-venda');
             const idVis = selVenda.options[selVenda.selectedIndex]?.getAttribute('data-visual') || '';
-            
-            // Tenta pegar o beneficiário manual se tiver, senão deixa em branco
-            const selBeneficiario = node.querySelector('.item-beneficiario');
-            const beneficiario = selBeneficiario ? selBeneficiario.value : '';
-
             itensArray.push({
                 vendaId: selVenda.value,
                 vendaVisual: idVis,
                 tipo: node.querySelector('.item-tipo').value,
-                beneficiario: beneficiario, // NOVO CAMPO
                 bruto: window.converterMoedaParaFloat(node.querySelector('.item-bruto').value)
             });
         });
@@ -7779,6 +7793,7 @@ window.carregarNotas = async function() {
             cnpjCpf: document.getElementById('notaCnpjCpf').value,
             brutoTotal: window.converterMoedaParaFloat(document.getElementById('notaBrutoTotal').value.replace('R$', '').trim()),
             percImp: parseFloat(document.getElementById('notaPercImp').value) || 0,
+            // NOVO: Captura a taxa extra manual do usuário
             taxaExtra: window.converterMoedaParaFloat(document.getElementById('notaTaxaExtra').value.replace('R$', '').trim()), 
             liquidoTotal: window.converterMoedaParaFloat(document.getElementById('notaLiquidoTotal').value.replace('R$', '').trim()),
             valorCreditado: window.converterMoedaParaFloat(document.getElementById('notaValorCreditado').value),
@@ -7800,12 +7815,8 @@ window.carregarNotas = async function() {
 
         window.esconderFormNotas();
         window.carregarNotas();
-    } catch (e) { 
-        alert("❌ Erro ao salvar nota: " + e.message);
-    } finally { 
-        btn.innerHTML = '<i class="bi bi-save"></i> Salvar Dados da Nota'; 
-        btn.disabled = false; 
-    }
+    } catch (e) { alert("❌ Erro ao salvar nota: " + e.message);
+    } finally { btn.innerHTML = '<i class="bi bi-save"></i> Salvar Dados da Nota'; btn.disabled = false; }
 }
 
     window.edNota = async function(id) {
@@ -8217,142 +8228,122 @@ window.filtrarVendasPedidoNF = function() {
 
 
     window.calcularItensPedidoNF = function() {
-    const selVendas = document.getElementById('pedidoVendas');
-    const selecionados = Array.from(selVendas.selectedOptions).map(opt => opt.value);
-    const tbody = document.getElementById('tabelaItensPedido');
-    tbody.innerHTML = '';
-    
-    // Se nada estiver selecionado, reseta tudo e sai
-    if(selecionados.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Selecione as vendas acima para carregar a prestação de contas.</td></tr>';
-        document.getElementById('pedidoTotalEmitir').innerText = 'R$ 0,00';
-        document.getElementById('pedidoTomadorSelect').innerHTML = '<option value="">👤 Puxar comprador ou vendedor da venda...</option>';
-        document.getElementById('pedidoTomador').value = '';
-        document.getElementById('pedidoCnpj').value = '';
-        return;
-    }
+    const selVendas = document.getElementById('pedidoVendas');
+    const selecionados = Array.from(selVendas.selectedOptions).map(opt => opt.value);
+    const tbody = document.getElementById('tabelaItensPedido');
+    tbody.innerHTML = '';
+    
+    // Se nada estiver selecionado, reseta tudo e sai
+    if(selecionados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Selecione as vendas acima para carregar a prestação de contas.</td></tr>';
+        document.getElementById('pedidoTotalEmitir').innerText = 'R$ 0,00';
+        document.getElementById('pedidoTomadorSelect').innerHTML = '<option value="">👤 Puxar comprador ou vendedor da venda...</option>';
+        document.getElementById('pedidoTomador').value = '';
+        document.getElementById('pedidoCnpj').value = '';
+        return;
+    }
 
-    // Auto-preenche a imobiliária emissora com base na primeira venda da lista
-    const primeiraVenda = vendasCadastradasCache.find(v => v.id === selecionados[0]);
-    if (primeiraVenda && primeiraVenda.imobiliaria) {
-        const selImob = document.getElementById('pedidoImob');
-        if ([...selImob.options].some(o => o.value === primeiraVenda.imobiliaria)) {
-            selImob.value = primeiraVenda.imobiliaria;
-        }
-    }
+    // Auto-preenche a imobiliária emissora com base na primeira venda da lista
+    const primeiraVenda = vendasCadastradasCache.find(v => v.id === selecionados[0]);
+    if (primeiraVenda && primeiraVenda.imobiliaria) {
+        const selImob = document.getElementById('pedidoImob');
+        if ([...selImob.options].some(o => o.value === primeiraVenda.imobiliaria)) {
+            selImob.value = primeiraVenda.imobiliaria;
+        }
+    }
 
-    // --- LOGICA DE ATUALIZAÇÃO DOS TOMADORES ---
-    const selTomador = document.getElementById('pedidoTomadorSelect');
-    selTomador.innerHTML = '<option value="">👤 Puxar comprador ou vendedor da venda...</option>';
-    
-    // Limpa os inputs de texto para evitar que fique o CPF de uma venda anterior
-    document.getElementById('pedidoTomador').value = '';
-    document.getElementById('pedidoCnpj').value = '';
-    
-    let envolvidos = [];
+    // --- LOGICA DE ATUALIZAÇÃO DOS TOMADORES ---
+    const selTomador = document.getElementById('pedidoTomadorSelect');
+    selTomador.innerHTML = '<option value="">👤 Puxar comprador ou vendedor da venda...</option>';
+    
+    // Limpa os inputs de texto para evitar que fique o CPF de uma venda anterior
+    document.getElementById('pedidoTomador').value = '';
+    document.getElementById('pedidoCnpj').value = '';
+    
+    let envolvidos = [];
 
-    const fMoeda = (val) => Number(val).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const fMoeda = (val) => Number(val).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-    selecionados.forEach(idVenda => {
-        const venda = vendasCadastradasCache.find(v => v.id === idVenda);
-        if(!venda) return;
-        const idVisual = venda.codigoVenda || idVenda.substring(0, 6).toUpperCase();
+    selecionados.forEach(idVenda => {
+        const venda = vendasCadastradasCache.find(v => v.id === idVenda);
+        if(!venda) return;
+        const idVisual = venda.codigoVenda || idVenda.substring(0, 6).toUpperCase();
 
-        // Coleta Vendedores e Compradores das vendas selecionadas para a lista azul
-        const listaPartes = [...(venda.vendedores || []), ...(venda.compradores || [])];
-        if (venda.vendedor && !venda.vendedores) listaPartes.push(venda.vendedor); // suporte a vendas antigas
+        // Coleta Vendedores e Compradores das vendas selecionadas para a lista azul
+        const listaPartes = [...(venda.vendedores || []), ...(venda.compradores || [])];
+        if (venda.vendedor && !venda.vendedores) listaPartes.push(venda.vendedor); // suporte a vendas antigas
 
-        listaPartes.forEach(parte => {
-            if (parte.nome && !envolvidos.some(e => e.nome === parte.nome)) {
-                envolvidos.push({ nome: parte.nome, doc: parte.cpfCnpj || parte.cpf || '' });
-            }
-        });
+        listaPartes.forEach(parte => {
+            if (parte.nome && !envolvidos.some(e => e.nome === parte.nome)) {
+                envolvidos.push({ nome: parte.nome, doc: parte.cpfCnpj || parte.cpf || '' });
+            }
+        });
 
-        // ==========================================
-        // NOVA LÓGICA: CRIA OPÇÕES DE BENEFICIÁRIOS DA NOTA
-        // ==========================================
-        let opcoesBenef = '<option value="">Selecione o recebedor...</option>';
-        if (venda.imobiliaria) opcoesBenef += `<option value="${venda.imobiliaria}">${venda.imobiliaria} (Imob)</option>`;
-        if (venda.corretor) opcoesBenef += `<option value="${venda.corretor}">${venda.corretor} (Corretor)</option>`;
-        if (venda.gerente) opcoesBenef += `<option value="${venda.gerente}">${venda.gerente} (Gerente)</option>`;
-        if (venda.temDiretoria && venda.temDiretoria !== 'Não') opcoesBenef += `<option value="${venda.temDiretoria}">${venda.temDiretoria} (Diretoria)</option>`;
-        if (venda.temParceria === 'Sim' && venda.nomeParceria) opcoesBenef += `<option value="${venda.nomeParceria}">${venda.nomeParceria} (Parceria)</option>`;
-        if (venda.pagaCadastro === 'Sim' && venda.nomeCadastro) opcoesBenef += `<option value="${venda.nomeCadastro}">${venda.nomeCadastro} (Captação)</option>`;
+        // Cálculo de Saldos (Comissão e Prêmio)
+        const comissaoGlobal = venda.vlrComissao || 0;
+        const parc = venda.temParceria === 'Sim' ? (venda.vlrParceria || 0) : 0;
+        
+        // A MÁGICA: Removemos o abatimento do Cadastro (- cad), assim ele compõe o saldo da NF!
+        let totalComissao = comissaoGlobal - parc; 
+        let totalPremio = (venda.premioCorretor || 0) + (venda.premioGerente || 0) + (venda.premioDiretoria || 0) + (venda.premioImob || 0);
 
-        // Cálculo de Saldos (Comissão e Prêmio)
-        const comissaoGlobal = venda.vlrComissao || 0;
-        const parc = venda.temParceria === 'Sim' ? (venda.vlrParceria || 0) : 0;
-        
-        let totalComissao = comissaoGlobal - parc; 
-        let totalPremio = (venda.premioCorretor || 0) + (venda.premioGerente || 0) + (venda.premioDiretoria || 0) + (venda.premioImob || 0);
+        let fatComissao = 0;
+        let fatPremio = 0;
+        
+        notasCadastradasCache.forEach(n => {
+            if (n.status !== 'NF Cancelada') {
+                if (n.itens && n.itens.length > 0) {
+                    n.itens.forEach(item => {
+                        if (item.vendaId === idVenda) {
+                            if (item.tipo.includes('Comissão')) fatComissao += (item.bruto || 0);
+                            else if (item.tipo.includes('Premia')) fatPremio += (item.bruto || 0);
+                        }
+                    });
+                } else if (n.vendaId === idVenda) {
+                    if (n.tipo && n.tipo.includes('Comissão')) fatComissao += (n.bruto || n.brutoTotal || 0);
+                    else if (n.tipo && n.tipo.includes('Premia')) fatPremio += (n.bruto || n.brutoTotal || 0);
+                }
+            }
+        });
 
-        let fatComissao = 0;
-        let fatPremio = 0;
-        
-        notasCadastradasCache.forEach(n => {
-            if (n.status !== 'NF Cancelada') {
-                if (n.itens && n.itens.length > 0) {
-                    n.itens.forEach(item => {
-                        if (item.vendaId === idVenda) {
-                            if (item.tipo.includes('Comissão')) fatComissao += (item.bruto || 0);
-                            else if (item.tipo.includes('Premia')) fatPremio += (item.bruto || 0);
-                        }
-                    });
-                } else if (n.vendaId === idVenda) {
-                    if (n.tipo && n.tipo.includes('Comissão')) fatComissao += (n.bruto || n.brutoTotal || 0);
-                    else if (n.tipo && n.tipo.includes('Premia')) fatPremio += (n.bruto || n.brutoTotal || 0);
-                }
-            }
-        });
+        let saldoComissao = Math.max(0, totalComissao - fatComissao);
+        let saldoPremio = Math.max(0, totalPremio - fatPremio);
 
-        let saldoComissao = Math.max(0, totalComissao - fatComissao);
-        let saldoPremio = Math.max(0, totalPremio - fatPremio);
+        // Renderiza as linhas na tabela
+        if (totalComissao > 0) {
+            tbody.innerHTML += `<tr>
+                <td>${idVisual}</td><td>${venda.produto || '-'}</td>
+                <td><span class="badge bg-primary">Comissão</span></td>
+                <td class="text-muted">R$ ${fMoeda(totalComissao)}</td>
+                <td class="text-primary">R$ ${fMoeda(fatComissao)}</td>
+                <td class="text-success fw-bold">R$ ${fMoeda(saldoComissao)}</td>
+                <td><div class="input-group input-group-sm">
+                    <span class="input-group-text bg-danger text-white border-danger">R$</span>
+                    <input type="text" class="form-control input-faturar border-danger text-danger fw-bold text-end" data-id="${idVisual}" data-fullid="${venda.id}" data-tipo="Comissão de Venda" value="${fMoeda(saldoComissao)}" oninput="aplicarMascaraMoeda(event); atualizarTotalPedido()">
+                </div></td>
+            </tr>`;
+        }
+        if (totalPremio > 0) {
+            tbody.innerHTML += `<tr>
+                <td>${idVisual}</td><td>${venda.produto || '-'}</td>
+                <td><span class="badge bg-warning text-dark">Prêmio</span></td>
+                <td class="text-muted">R$ ${fMoeda(totalPremio)}</td>
+                <td class="text-primary">R$ ${fMoeda(fatPremio)}</td>
+                <td class="text-success fw-bold">R$ ${fMoeda(saldoPremio)}</td>
+                <td><div class="input-group input-group-sm">
+                    <span class="input-group-text bg-danger text-white border-danger">R$</span>
+                    <input type="text" class="form-control input-faturar border-danger text-danger fw-bold text-end" data-id="${idVisual}" data-fullid="${venda.id}" data-tipo="Premiação" value="${fMoeda(saldoPremio)}" oninput="aplicarMascaraMoeda(event); atualizarTotalPedido()">
+                </div></td>
+            </tr>`;
+        }
+    });
 
-        // Renderiza as linhas na tabela
-        if (totalComissao > 0) {
-            tbody.innerHTML += `<tr>
-                <td>${idVisual}</td><td>${venda.produto || '-'}</td>
-                <td><span class="badge bg-primary">Comissão</span></td>
-                <td class="text-muted">R$ ${fMoeda(totalComissao)}</td>
-                <td class="text-primary">R$ ${fMoeda(fatComissao)}</td>
-                <td class="text-success fw-bold">R$ ${fMoeda(saldoComissao)}</td>
-                <td>
-                    <select class="form-select form-select-sm border-secondary item-beneficiario" style="min-width: 140px;">
-                        ${opcoesBenef}
-                    </select>
-                </td>
-                <td><div class="input-group input-group-sm">
-                    <span class="input-group-text bg-danger text-white border-danger">R$</span>
-                    <input type="text" class="form-control input-faturar border-danger text-danger fw-bold text-end item-bruto" data-id="${idVisual}" data-fullid="${venda.id}" data-tipo="Comissão de Venda" value="${fMoeda(saldoComissao)}" oninput="aplicarMascaraMoeda(event); atualizarTotalPedido()">
-                </div></td>
-            </tr>`;
-        }
-        if (totalPremio > 0) {
-            tbody.innerHTML += `<tr>
-                <td>${idVisual}</td><td>${venda.produto || '-'}</td>
-                <td><span class="badge bg-warning text-dark">Prêmio</span></td>
-                <td class="text-muted">R$ ${fMoeda(totalPremio)}</td>
-                <td class="text-primary">R$ ${fMoeda(fatPremio)}</td>
-                <td class="text-success fw-bold">R$ ${fMoeda(saldoPremio)}</td>
-                <td>
-                    <select class="form-select form-select-sm border-secondary item-beneficiario" style="min-width: 140px;">
-                        ${opcoesBenef}
-                    </select>
-                </td>
-                <td><div class="input-group input-group-sm">
-                    <span class="input-group-text bg-danger text-white border-danger">R$</span>
-                    <input type="text" class="form-control input-faturar border-danger text-danger fw-bold text-end item-bruto" data-id="${idVisual}" data-fullid="${venda.id}" data-tipo="Premiação" value="${fMoeda(saldoPremio)}" oninput="aplicarMascaraMoeda(event); atualizarTotalPedido()">
-                </div></td>
-            </tr>`;
-        }
-    });
+    // Popula o seletor azul com os nomes encontrados
+    envolvidos.forEach(env => {
+        selTomador.innerHTML += `<option value="${env.doc}">${env.nome}</option>`;
+    });
 
-    // Popula o seletor azul com os nomes encontrados
-    envolvidos.forEach(env => {
-        selTomador.innerHTML += `<option value="${env.doc}">${env.nome}</option>`;
-    });
-
-    window.atualizarTotalPedido();
+    window.atualizarTotalPedido();
 }
 
     window.atualizarTotalPedido = function() {
@@ -8364,151 +8355,145 @@ window.filtrarVendasPedidoNF = function() {
     }
 
     window.gerarImpressaoPedidoNF = async function() {
-    const btn = document.getElementById('btnGerarPedidoModal');
-    const textoOriginal = btn ? btn.innerHTML : 'Salvar';
-    
-    try {
-        if(btn) { btn.innerHTML = '⏳ Processando...'; btn.disabled = true; }
-
-        const selectImob = document.getElementById('pedidoImob');
-        const emissorStr = selectImob && selectImob.options.length > 0 ? selectImob.options[selectImob.selectedIndex].text : 'Não selecionada';
-        const tomador = document.getElementById('pedidoTomador').value || 'Não informado';
-        const cnpj = document.getElementById('pedidoCnpj').value || 'Não informado';
-        const obs = document.getElementById('pedidoObs').value || '';
-        const tipoLancamento = document.getElementById('pedidoTipoLancamento').value; 
+        const btn = document.getElementById('btnGerarPedidoModal');
+        const textoOriginal = btn ? btn.innerHTML : 'Salvar';
         
-        const emissorObj = imobiliariasCadastradasCache.find(i => i.fantasia === emissorStr) || {};
-        const impostoDaImob = emissorObj.imposto || 0;
-        const dadosBancarios = emissorObj.banco ? 
-            '<strong>Banco:</strong> ' + emissorObj.banco + ' | <strong>Agência:</strong> ' + (emissorObj.agencia || '-') + ' | <strong>Conta:</strong> ' + (emissorObj.conta || '-') + ' | <strong>PIX:</strong> ' + (emissorObj.pix || '-') : 
-            'Dados bancários não cadastrados no sistema.';
+        try {
+            if(btn) { btn.innerHTML = '⏳ Processando...'; btn.disabled = true; }
 
-        const inputsFaturar = document.querySelectorAll('.input-faturar');
-        if(inputsFaturar.length === 0) throw new Error("Tabela vazia.");
+            const selectImob = document.getElementById('pedidoImob');
+            const emissorStr = selectImob && selectImob.options.length > 0 ? selectImob.options[selectImob.selectedIndex].text : 'Não selecionada';
+            const tomador = document.getElementById('pedidoTomador').value || 'Não informado';
+            const cnpj = document.getElementById('pedidoCnpj').value || 'Não informado';
+            const obs = document.getElementById('pedidoObs').value || '';
+            const tipoLancamento = document.getElementById('pedidoTipoLancamento').value; 
+            
+            const emissorObj = imobiliariasCadastradasCache.find(i => i.fantasia === emissorStr) || {};
+            const impostoDaImob = emissorObj.imposto || 0;
+            const dadosBancarios = emissorObj.banco ? 
+                '<strong>Banco:</strong> ' + emissorObj.banco + ' | <strong>Agência:</strong> ' + (emissorObj.agencia || '-') + ' | <strong>Conta:</strong> ' + (emissorObj.conta || '-') + ' | <strong>PIX:</strong> ' + (emissorObj.pix || '-') : 
+                'Dados bancários não cadastrados no sistema.';
 
-        let itensDaNota = [];
-        let totalBrutoNF = 0;
-        let totalLiquidoNF = 0;
-        let itensHtml = ''; 
+            const inputsFaturar = document.querySelectorAll('.input-faturar');
+            if(inputsFaturar.length === 0) throw new Error("Tabela vazia.");
 
-        // 1. Agrupa os itens da nota em um Array
-        inputsFaturar.forEach(inp => {
-            const val = window.converterMoedaParaFloat(inp.value);
-            if(val > 0) {
-                const linhaTr = inp.closest('tr');
-                const idVisual = inp.getAttribute('data-id');
-                const idFull = inp.getAttribute('data-fullid'); 
-                const tipoItem = inp.getAttribute('data-tipo');
-                
-                // NOVO: Puxa o beneficiário que você selecionou no dropdown da linha
-                const selBenef = linhaTr.querySelector('.item-beneficiario');
-                const beneficiarioDaLinha = selBenef && selBenef.value ? selBenef.value : 'Não especificado';
-                
-                itensDaNota.push({
-                    vendaId: idFull,
-                    vendaVisual: idVisual,
-                    tipo: tipoItem,
-                    beneficiario: beneficiarioDaLinha, // Salva o nome na base de dados
-                    bruto: val
-                });
+            let itensDaNota = [];
+            let totalBrutoNF = 0;
+            let totalLiquidoNF = 0;
+            let itensHtml = ''; // Para o PDF visual
 
-                totalBrutoNF += val;
-                
-                // --- MONTA A LINHA DO PDF ---
-                const venda = vendasCadastradasCache.find(vd => vd.id === idFull) || {};
-                
-                const prod = venda.produto || 'Não informado';
-                const und = (venda.unidades && venda.unidades.length > 0) ? venda.unidades.join(', ') : (venda.unidade || 'Não informada');
-                
-                let valorVendaCalculado = Number(venda.vgv || 0);
-                if (venda.vpl === 'Sim' && Number(venda.vendaReal) > 0) {
-                    valorVendaCalculado = Number(venda.vendaReal); 
+            // 1. Agrupa os itens da nota em um Array
+            inputsFaturar.forEach(inp => {
+                const val = window.converterMoedaParaFloat(inp.value);
+                if(val > 0) {
+                    const idVisual = inp.getAttribute('data-id');
+                    const idFull = inp.getAttribute('data-fullid'); 
+                    const tipoItem = inp.getAttribute('data-tipo');
+                    
+                    itensDaNota.push({
+                        vendaId: idFull,
+                        vendaVisual: idVisual,
+                        tipo: tipoItem,
+                        bruto: val
+                    });
+
+                    totalBrutoNF += val;
+                    
+                    // --- MONTA A LINHA DO PDF (NOVO PADRÃO: 7 ITENS + 2 COLUNAS) ---
+                    const venda = vendasCadastradasCache.find(vd => vd.id === idFull) || {};
+                    
+                    const prod = venda.produto || 'Não informado';
+                    const und = (venda.unidades && venda.unidades.length > 0) ? venda.unidades.join(', ') : (venda.unidade || 'Não informada');
+                    
+                    // Lógica para Valor da Venda (VPL vs VGV)
+                    let valorVendaCalculado = Number(venda.vgv || 0);
+                    if (venda.vpl === 'Sim' && Number(venda.vendaReal) > 0) {
+                        valorVendaCalculado = Number(venda.vendaReal); 
+                    }
+                    const valorVendaFmt = valorVendaCalculado.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    const valorEmitirFmt = val.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    
+                    const vendedorNome = venda.vendedor && venda.vendedor.nome ? venda.vendedor.nome : (venda.vendedores && venda.vendedores.length > 0 ? venda.vendedores[0].nome : 'Não informado');
+                    const vendedorDoc = venda.vendedor && venda.vendedor.cpfCnpj ? venda.vendedor.cpfCnpj : (venda.vendedores && venda.vendedores.length > 0 ? venda.vendedores[0].cpfCnpj : 'Não informado');
+                    
+                    let compradoresStr = 'Não informado';
+                    if (venda.compradores && venda.compradores.length > 0) {
+                        compradoresStr = venda.compradores.map(c => `${c.nome} (Doc: ${c.cpf || '-'})`).join('; ');
+                    }
+
+                    const corretorNome = venda.corretor || 'Não informado';
+                    const gerenteNome = venda.gerente || 'Não informado';
+
+                    itensHtml += '<tr>';
+                    itensHtml += '<td style="padding: 10px; border: 1px solid #ccc; font-size: 11px; vertical-align: top; line-height: 1.5;">';
+                    itensHtml += `<strong>1. Produto Vendido:</strong> ${prod} - ${tipoItem}<br>`;
+                    itensHtml += `<strong>2. Unidade Vendida:</strong> ${und}<br>`;
+                    itensHtml += `<strong>3. Valor da Venda:</strong> R$ ${valorVendaFmt}<br>`;
+                    itensHtml += `<strong>4. Valor Total da Nota:</strong> R$ ${valorEmitirFmt}<br>`;
+                    itensHtml += `<strong>5. Comprador(es):</strong> ${compradoresStr}<br>`;
+                    itensHtml += `<strong>6. Vendedor(es):</strong> ${vendedorNome} (Doc: ${vendedorDoc})<br>`;
+                    itensHtml += `<strong>7. Código da Venda (ID):</strong> ${idVisual}<br><br>`;
+                    itensHtml += `<span style="color: #555; font-style: italic;"><strong>Equipe de Vendas:</strong> Corretor(a) ${corretorNome} | Gerente ${gerenteNome}</span>`;
+                    itensHtml += '</td>';
+                    itensHtml += '<td style="padding: 10px; border: 1px solid #ccc; font-size: 15px; font-weight: bold; color: #198754; text-align: right; vertical-align: top;">R$ ' + valorEmitirFmt + '</td>';
+                    itensHtml += '</tr>';
                 }
-                const valorVendaFmt = valorVendaCalculado.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                const valorEmitirFmt = val.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                
-                const vendedorNome = venda.vendedor && venda.vendedor.nome ? venda.vendedor.nome : (venda.vendedores && venda.vendedores.length > 0 ? venda.vendedores[0].nome : 'Não informado');
-                const vendedorDoc = venda.vendedor && venda.vendedor.cpfCnpj ? venda.vendedor.cpfCnpj : (venda.vendedores && venda.vendedores.length > 0 ? venda.vendedores[0].cpfCnpj : 'Não informado');
-                
-                let compradoresStr = 'Não informado';
-                if (venda.compradores && venda.compradores.length > 0) {
-                    compradoresStr = venda.compradores.map(c => `${c.nome} (Doc: ${c.cpf || '-'})`).join('; ');
-                }
+            });
 
-                const corretorNome = venda.corretor || 'Não informado';
-                const gerenteNome = venda.gerente || 'Não informado';
-
-                itensHtml += '<tr>';
-                itensHtml += '<td style="padding: 10px; border: 1px solid #ccc; font-size: 11px; vertical-align: top; line-height: 1.5;">';
-                itensHtml += `<strong>1. Produto Vendido:</strong> ${prod} - ${tipoItem}<br>`;
-                itensHtml += `<strong>2. Unidade Vendida:</strong> ${und}<br>`;
-                itensHtml += `<strong>3. Valor da Venda:</strong> R$ ${valorVendaFmt}<br>`;
-                itensHtml += `<strong>4. Valor Total da Nota:</strong> R$ ${valorEmitirFmt}<br>`;
-                itensHtml += `<strong>5. Comprador(es):</strong> ${compradoresStr}<br>`;
-                itensHtml += `<strong>6. Vendedor(es):</strong> ${vendedorNome} (Doc: ${vendedorDoc})<br>`;
-                itensHtml += `<strong>7. Código da Venda (ID):</strong> ${idVisual}<br>`;
-                // Adicionado no descritivo do PDF para a contabilidade
-                itensHtml += `<strong>8. Beneficiário Direto do Repasse:</strong> <span style="color:#0d6efd; font-weight:bold;">${beneficiarioDaLinha}</span><br><br>`;
-                itensHtml += `<span style="color: #555; font-style: italic;"><strong>Equipe de Vendas:</strong> Corretor(a) ${corretorNome} | Gerente ${gerenteNome}</span>`;
-                itensHtml += '</td>';
-                itensHtml += '<td style="padding: 10px; border: 1px solid #ccc; font-size: 15px; font-weight: bold; color: #198754; text-align: right; vertical-align: top;">R$ ' + valorEmitirFmt + '</td>';
-                itensHtml += '</tr>';
+            if(totalBrutoNF === 0) {
+                alert("O valor total a faturar é R$ 0,00.");
+                throw new Error("Valor total zerado.");
             }
-        });
 
-        if(totalBrutoNF === 0) {
-            alert("O valor total a faturar é R$ 0,00.");
-            throw new Error("Valor total zerado.");
-        }
+            // 2. Calcula o Líquido Global
+            totalLiquidoNF = totalBrutoNF - (totalBrutoNF * (impostoDaImob / 100));
 
-        // 2. Calcula o Líquido Global
-        totalLiquidoNF = totalBrutoNF - (totalBrutoNF * (impostoDaImob / 100));
+            let statusFinal = 'Pendente';
+            let obsExtra = 'Gerado via painel de faturamento. ' + obs;
+            if (tipoLancamento === 'sem_nf') obsExtra = '[LANÇAMENTO INTERNO SEM NF] ' + obs;
+            else if (tipoLancamento === 'isencao') { statusFinal = 'Isenção / Baixa'; obsExtra = '[ISENÇÃO / DESCONTO APLICADO] ' + obs; }
 
-        let statusFinal = 'Pendente';
-        let obsExtra = 'Gerado via painel de faturamento. ' + obs;
-        if (tipoLancamento === 'sem_nf') obsExtra = '[LANÇAMENTO INTERNO SEM NF] ' + obs;
-        else if (tipoLancamento === 'isencao') { statusFinal = 'Isenção / Baixa'; obsExtra = '[ISENÇÃO / DESCONTO APLICADO] ' + obs; }
+            // 3. Salva UMA ÚNICA NOTA com Múltiplos Itens
+            const notaUnificada = {
+                numero: tipoLancamento === 'isencao' ? 'BAIXA' : '',
+                imobiliaria: emissorStr,
+                dataEmissao: new Date().toISOString().split('T')[0], 
+                tomador: tomador,
+                cnpjCpf: cnpj,
+                brutoTotal: totalBrutoNF,
+                percImp: impostoDaImob,
+                liquidoTotal: totalLiquidoNF,
+                valorCreditado: 0,
+                prevCredito: '',
+                status: statusFinal,
+                metodoLancamento: tipoLancamento, 
+                descricao: obsExtra,
+                link: '',
+                itens: itensDaNota, 
+                tipo: itensDaNota.length === 1 ? itensDaNota[0].tipo : 'Múltiplos Itens', 
+                criadoEm: serverTimestamp()
+            };
 
-        // 3. Salva UMA ÚNICA NOTA com Múltiplos Itens
-        const notaUnificada = {
-            numero: tipoLancamento === 'isencao' ? 'BAIXA' : '',
-            imobiliaria: emissorStr,
-            dataEmissao: new Date().toISOString().split('T')[0], 
-            tomador: tomador,
-            cnpjCpf: cnpj,
-            brutoTotal: totalBrutoNF,
-            percImp: impostoDaImob,
-            liquidoTotal: totalLiquidoNF,
-            valorCreditado: 0,
-            prevCredito: '',
-            status: statusFinal,
-            metodoLancamento: tipoLancamento, 
-            descricao: obsExtra,
-            link: '',
-            itens: itensDaNota, 
-            tipo: itensDaNota.length === 1 ? itensDaNota[0].tipo : 'Múltiplos Itens', 
-            criadoEm: serverTimestamp()
-        };
+            await addDoc(collection(db, "notas"), notaUnificada);
+            window.carregarNotas(); 
+            
+            // Fecha Modal do Pedido
+            const modalEl = document.getElementById('modalPedidoNF');
+            if (modalEl) {
+                const modalInst = bootstrap.Modal.getInstance(modalEl);
+                if(modalInst) modalInst.hide();
+            }
 
-        await addDoc(collection(db, "notas"), notaUnificada);
-        window.carregarNotas(); 
-        
-        // Fecha Modal do Pedido
-        const modalEl = document.getElementById('modalPedidoNF');
-        if (modalEl) {
-            const modalInst = bootstrap.Modal.getInstance(modalEl);
-            if(modalInst) modalInst.hide();
-        }
-
-        // 4. Geração do PDF (Se for NF) COM O LAYOUT NOVO PADRONIZADO
-        if (tipoLancamento === 'com_nf') {
-            const dataAtual = new Date().toLocaleDateString('pt-BR');
-            let htmlToPrint = `
-            <!DOCTYPE html>
-            <html lang="pt-BR">
-            <head>
-                <title>Pedido NF - ${tomador}</title>
-                <style>
+            // 4. Geração do PDF (Se for NF) COM O LAYOUT NOVO PADRONIZADO
+            if (tipoLancamento === 'com_nf') {
+                const dataAtual = new Date().toLocaleDateString('pt-BR');
+                
+                let htmlToPrint = `
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+                <head>
+                    <title>Pedido NF - ${tomador}</title>
+                    <style>
     html, body { margin: 0 !important; padding: 0 !important; font-family: Helvetica, Arial, sans-serif; color: #333; font-size: 11px;} 
     .print-container { padding: 0; margin: 0; }
     .header { text-align: center; border-bottom: 2px solid #0d6efd; padding-bottom: 10px; margin-bottom: 15px; } 
@@ -8528,69 +8513,69 @@ window.filtrarVendasPedidoNF = function() {
         tr, .total { page-break-inside: avoid !important; } 
     }
 </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h2>PEDIDO DE EMISSÃO DE NOTA FISCAL DE SERVIÇOS</h2>
-                    <p style="margin: 5px 0 0 0;">Data da Solicitação: ${dataAtual}</p>
-                </div>
-                
-                <div class="box" style="background: #eaf1fb; border-color: #0d6efd;">
-                    <div class="box-title" style="color: #0d6efd;">1. EMPRESA EMISSORA (PRESTADOR DO SERVIÇO)</div>
-                    <strong>Imobiliária Solicitante:</strong> ${emissorStr}
-                </div>
-                
-                <div class="box">
-                    <div class="box-title">2. DADOS DO TOMADOR DO SERVIÇO (CLIENTE DA NF)</div>
-                    <strong>Nome/Razão Social:</strong> ${tomador}<br>
-                    <strong>CPF/CNPJ:</strong> ${cnpj}
-                </div>
-                
-                <div style="font-weight: bold; font-size: 11px; color: #2c3e50; text-transform: uppercase; margin-bottom: 0;">3. DETALHAMENTO DA NEGOCIAÇÃO E SERVIÇOS</div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 75%; text-align: left;">Descrição Completa (Exigência Receita Federal)</th>
-                            <th style="width: 25%; text-align: right;">Valor a Emitir (R$)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${itensHtml}
-                    </tbody>
-                </table>
-                
-                <div class="total">VALOR TOTAL A EMITIR NESTA NOTA: R$ ${totalBrutoNF.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-                
-                <div class="box" style="margin-top:20px; background: #fff3cd; border-color: #ffc107;">
-                    <div class="box-title" style="color: #856404;">4. DADOS BANCÁRIOS PARA PAGAMENTO DA NF</div>
-                    <p style="margin: 0; font-size: 13px;">${dadosBancarios}</p>
-                </div>
+                </head>
+                <body>
+                    <div class="header">
+                        <h2>PEDIDO DE EMISSÃO DE NOTA FISCAL DE SERVIÇOS</h2>
+                        <p style="margin: 5px 0 0 0;">Data da Solicitação: ${dataAtual}</p>
+                    </div>
+                    
+                    <div class="box" style="background: #eaf1fb; border-color: #0d6efd;">
+                        <div class="box-title" style="color: #0d6efd;">1. EMPRESA EMISSORA (PRESTADOR DO SERVIÇO)</div>
+                        <strong>Imobiliária Solicitante:</strong> ${emissorStr}
+                    </div>
+                    
+                    <div class="box">
+                        <div class="box-title">2. DADOS DO TOMADOR DO SERVIÇO (CLIENTE DA NF)</div>
+                        <strong>Nome/Razão Social:</strong> ${tomador}<br>
+                        <strong>CPF/CNPJ:</strong> ${cnpj}
+                    </div>
+                    
+                    <div style="font-weight: bold; font-size: 11px; color: #2c3e50; text-transform: uppercase; margin-bottom: 0;">3. DETALHAMENTO DA NEGOCIAÇÃO E SERVIÇOS</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 75%; text-align: left;">Descrição Completa (Exigência Receita Federal)</th>
+                                <th style="width: 25%; text-align: right;">Valor a Emitir (R$)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itensHtml}
+                        </tbody>
+                    </table>
+                    
+                    <div class="total">VALOR TOTAL A EMITIR NESTA NOTA: R$ ${totalBrutoNF.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    
+                    <div class="box" style="margin-top:20px; background: #fff3cd; border-color: #ffc107;">
+                        <div class="box-title" style="color: #856404;">4. DADOS BANCÁRIOS PARA PAGAMENTO DA NF</div>
+                        <p style="margin: 0; font-size: 13px;">${dadosBancarios}</p>
+                    </div>
 
-                ${obs ? `<div class="box" style="margin-top: 15px;"><div class="box-title">Observações Extras</div>${obs}</div>` : ''}
+                    ${obs ? `<div class="box" style="margin-top: 15px;"><div class="box-title">Observações Extras</div>${obs}</div>` : ''}
 
-                <div style="margin-top: 30px; text-align: center; font-size: 9px; color: #777; border-top: 1px solid #eee; padding-top: 10px;">Gerado via Citroni CRM</div>
-            </body>
-            </html>`;
+                    <div style="margin-top: 30px; text-align: center; font-size: 9px; color: #777; border-top: 1px solid #eee; padding-top: 10px;">Gerado via Citroni CRM</div>
+                </body>
+                </html>`;
 
-            const printWindow = window.open('', '', 'width=900,height=800');
-            if(printWindow) {
-                printWindow.document.write(htmlToPrint);
-                printWindow.document.close();
-                printWindow.focus();
-                setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+                const printWindow = window.open('', '', 'width=900,height=800');
+                if(printWindow) {
+                    printWindow.document.write(htmlToPrint);
+                    printWindow.document.close();
+                    printWindow.focus();
+                    setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+                }
+            } else {
+                alert("✅ Lançamento processado e unificado com sucesso!");
             }
-        } else {
-            alert("✅ Lançamento processado e unificado com sucesso!");
+            
+        } catch (e) {
+            if (e.message !== "Valor total zerado." && e.message !== "Tabela vazia.") {
+                alert("❌ Erro crítico: " + e.message);
+            }
+        } finally {
+            if(btn) { btn.innerHTML = textoOriginal; btn.disabled = false; }
         }
-        
-    } catch (e) {
-        if (e.message !== "Valor total zerado." && e.message !== "Tabela vazia.") {
-            alert("❌ Erro crítico: " + e.message);
-        }
-    } finally {
-        if(btn) { btn.innerHTML = textoOriginal; btn.disabled = false; }
     }
-}
 
     function configurarFiltroTabela(inputId, tabelaId) {
     const input = document.getElementById(inputId);
