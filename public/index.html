@@ -1397,8 +1397,8 @@
                     </select>
                 </div>
                 <div class="col-md-5">
-                    <label class="form-label text-muted small fw-bold">Anexar NF do Corretor (PDF)</label>
-                    <input type="file" class="form-control border-secondary" id="arquivoNfCorretor" accept=".pdf">
+                    <label class="form-label text-muted small fw-bold">Link da NF do Corretor (Google Drive)</label>
+                    <input type="url" class="form-control border-secondary" id="arquivoNfCorretor" placeholder="Cole aqui o link do Google Drive da NF">
                     <div id="areaLinkNfCorretor" class="mt-2 d-none">
                         <a href="#" id="linkNfCorretorAtual" target="_blank" class="text-success fw-bold small"><i class="bi bi-file-pdf"></i> Ver NF salva</a>
                         <input type="hidden" id="urlNfCorretorSalva">
@@ -1571,8 +1571,8 @@
                     <div class="card p-4 border-0 shadow-sm mb-5 w-100">
                         <div class="row align-items-center g-3">
                             <div class="col-md-6">
-                                <label class="form-label text-muted small fw-bold">Anexar PDF da NF</label>
-                                <input type="file" class="form-control border-primary" id="arquivoNota" accept=".pdf">
+                                <label class="form-label text-muted small fw-bold">Link da NF (Google Drive)</label>
+                                <input type="url" class="form-control border-primary" id="arquivoNota" placeholder="Cole aqui o link do Google Drive da NF">
                                 <div id="areaLinkNota" class="mt-2 d-none">
                                     <a href="#" id="linkNotaAtual" target="_blank" class="text-success fw-bold small"><i class="bi bi-file-pdf"></i> Ver NF Salva</a>
                                     <input type="hidden" id="urlNotaSalva">
@@ -1649,6 +1649,7 @@
                                 <option value="ordem_pagamento" class="text-dark fw-bold">10 - Ordem de Pagamento</option>
                                 <option value="informe_rendimentos" class="text-dark fw-bold">11 - Informe de Rendimentos (IRPF)</option>
                                 <option value="relatorio_pix_contatos" class="text-info fw-bold">12 - Relatório de PIX e Contatos (Equipe)</option>
+                                <option value="relatorio_pagamentos_efetuados" class="text-success fw-bold">13 - Relação de Pagamentos Efetuados</option>
                             </optgroup>
                         </select>
                     </div>
@@ -6787,21 +6788,52 @@ window.imprimirMemoriaCalculo = function(beneficiario) {
 
             let baseRateio = 0;
             let impostoVisual = 0;
-            let usaNf = false;
+            let usaNfComissao = false;
+            let usaNfPremio = false;
+            let impostoPremio = 0;
 
-            if (nfsDaVenda.length > 0) {
-                usaNf = true;
-                
-                // MÁGICA 1: Captura a alíquota da NF para aplicar proporcionalmente aos Prêmios
-                impostoVisual = parseFloat(nfsDaVenda[0].percImp) || 0;
+            // MÁGICA 1: Separa as Notas de Comissão das Notas de Prêmio
+            let nfsComissao = [];
+            let nfsPremio = [];
 
-                nfsDaVenda.forEach(nf => {
-                    if (nf.itens && nf.itens.length > 0) {
-                        let itemVenda = nf.itens.find(i => i.vendaId === v.id || (i.vendaVisual && i.vendaVisual.trim().toUpperCase() === idVisual));
-                        if (itemVenda && Number(nf.brutoTotal) > 0) {
-                            let proporcao = (Number(itemVenda.bruto) || 0) / Number(nf.brutoTotal);
-                            baseRateio += (Number(nf.liquidoTotal) || 0) * proporcao;
+            nfsDaVenda.forEach(nf => {
+                let isComissao = false;
+                let isPremio = false;
+
+                if (nf.itens && nf.itens.length > 0) {
+                    nf.itens.forEach(item => {
+                        if (item.vendaId === v.id || (item.vendaVisual && item.vendaVisual.trim().toUpperCase() === idVisual)) {
+                            // Se o tipo não existir, assume como Comissão. Se existir, filtra a palavra.
+                            if (!item.tipo || item.tipo.includes('Comissão')) isComissao = true;
+                            if (item.tipo && (item.tipo.includes('Prêmio') || item.tipo.includes('Premia'))) isPremio = true;
                         }
+                    });
+                } else {
+                    if (!nf.tipo || nf.tipo.includes('Comissão')) isComissao = true;
+                    if (nf.tipo && (nf.tipo.includes('Prêmio') || nf.tipo.includes('Premia'))) isPremio = true;
+                }
+
+                if (isComissao) nfsComissao.push(nf);
+                if (isPremio) nfsPremio.push(nf);
+            });
+
+            // LÓGICA DA COMISSÃO (Somente NFs de Comissão alimentam o Bolo de Rateio)
+            if (nfsComissao.length > 0) {
+                usaNfComissao = true;
+                impostoVisual = parseFloat(nfsComissao[0].percImp) || 0;
+
+                nfsComissao.forEach(nf => {
+                    if (nf.itens && nf.itens.length > 0) {
+                        let itensVendaComissao = nf.itens.filter(i => 
+                            (i.vendaId === v.id || (i.vendaVisual && i.vendaVisual.trim().toUpperCase() === idVisual)) &&
+                            (!i.tipo || i.tipo.includes('Comissão'))
+                        );
+                        itensVendaComissao.forEach(itemVenda => {
+                            if (Number(nf.brutoTotal) > 0) {
+                                let proporcao = (Number(itemVenda.bruto) || 0) / Number(nf.brutoTotal);
+                                baseRateio += (Number(nf.liquidoTotal) || 0) * proporcao;
+                            }
+                        });
                     } else {
                         baseRateio += Number(nf.liquidoTotal) || 0;
                     }
@@ -6812,21 +6844,32 @@ window.imprimirMemoriaCalculo = function(beneficiario) {
                 baseRateio = (Number(v.vlrComissao) || 0) - deducoes;
             }
 
+            // LÓGICA DO PRÊMIO (Totalmente Isolada)
+            if (nfsPremio.length > 0) {
+                usaNfPremio = true;
+                impostoPremio = parseFloat(nfsPremio[0].percImp) || 0;
+            } else {
+                impostoPremio = v.imobiliaria ? (imobTaxMap[v.imobiliaria] || 0) : 0;
+            }
+
             const addProvisao = (tipoBen, nomeBen, percRateio, vlrAbsoluto, tipoRepasse = 'Comissão') => {
                 if (!nomeBen) return;
                 
                 let valorDevido = 0;
+                // Define qual matemática usar dependendo se a linha é Prêmio ou Comissão
+                let usaNfAtual = (tipoRepasse === 'Prêmio') ? usaNfPremio : usaNfComissao;
+                let impostoAtual = (tipoRepasse === 'Prêmio') ? impostoPremio : impostoVisual;
                 
-                // MÁGICA 2: Ajuste contábil inteligente
+                // MÁGICA 2: Ajuste contábil inteligente TOTALMENTE ISOLADO
                 if (tipoRepasse === 'Comissão' && Number(percRateio) > 0) {
                     valorDevido = baseRateio * (Number(percRateio) / 100);
                 } else {
                     // Trata Prêmios e Parcerias (Valores Fixos Absolutos)
                     let valBruto = Number(vlrAbsoluto) || 0;
                     
-                    if (usaNf) {
-                        // Desconta o imposto da NF no prêmio para igualar ao líquido e anular o "AJUSTE"
-                        valorDevido = valBruto - (valBruto * (impostoVisual / 100));
+                    if (usaNfAtual) {
+                        // Desconta o imposto da NF no valor fixo para igualar ao líquido e anular o "AJUSTE"
+                        valorDevido = valBruto - (valBruto * (impostoAtual / 100));
                     } else {
                         valorDevido = valBruto; 
                     }
@@ -6834,6 +6877,7 @@ window.imprimirMemoriaCalculo = function(beneficiario) {
 
                 if (valorDevido <= 0) return;
 
+                // A chave de verificação (garante que Prêmio não subtrai Comissão)
                 let key = `${v.id}_${tipoBen}_${tipoRepasse}`;
                 let faturado = faturadoMap[key] || 0;
                 let saldo = valorDevido - faturado;
@@ -6841,15 +6885,15 @@ window.imprimirMemoriaCalculo = function(beneficiario) {
                 if (saldo < 0.05) saldo = 0; 
                 if (saldo <= 0) return; 
                 
-                let liquidoCalc = usaNf ? saldo : saldo - (saldo * (impostoVisual / 100));
+                let liquidoCalc = usaNfAtual ? saldo : saldo - (saldo * (impostoAtual / 100));
 
                 todasLinhas.push({
                     isVirtual: true, vendaId: v.id, vendaVisual: idVisual, tipo: tipoRepasse, 
                     beneficiario: nomeBen, tipoBeneficiario: tipoBen, 
-                    bruto: saldo, percImp: impostoVisual, liquido: liquidoCalc, 
+                    bruto: saldo, percImp: impostoAtual, liquido: liquidoCalc, 
                     dataPrev: '', status: 'Provisão',
                     produto: v.produto || '', unidade: (v.unidades && v.unidades.length > 0) ? v.unidades.join(', ') : (v.unidade || '-'),
-                    usaNf: usaNf 
+                    usaNf: usaNfAtual 
                 });
             };
 
@@ -6975,141 +7019,135 @@ window.imprimirMemoriaCalculo = function(beneficiario) {
 }
 
     window.salvarRepasseFirebase = async function() {
-        const btn = document.getElementById('btnSalvarRepasse');
-        btn.innerText = "⏳ Salvando...";
-        btn.disabled = true;
+    const btn = document.getElementById('btnSalvarRepasse');
+    btn.innerText = "⏳ Salvando...";
+    btn.disabled = true;
 
-        try {
-            const selectVenda = document.getElementById('repVendaId');
-            let vendaVisualStr = '';
-            if(selectVenda.selectedIndex > 0) {
-                vendaVisualStr = selectVenda.options[selectVenda.selectedIndex].text.split(' -')[0];
-            }
-
-            let urlFinalNfCorretor = document.getElementById('urlNfCorretorSalva').value || ""; 
-            const arquivoInputNf = document.getElementById('arquivoNfCorretor');
-
-            if (arquivoInputNf.files.length > 0) {
-                btn.innerHTML = "⏳ Subindo PDF...";
-                const arquivo = arquivoInputNf.files[0];
-                const nomeLimpo = arquivo.name.replace(/[^a-zA-Z0-9.]/g, '_');
-                const storageRef = ref(storage, 'nfs_corretor/' + Date.now() + '_' + nomeLimpo);
-                await uploadBytes(storageRef, arquivo);
-                urlFinalNfCorretor = await getDownloadURL(storageRef);
-                btn.innerHTML = "⏳ Salvando Dados...";
-            }
-
-            const elBrutoOculto = document.getElementById('repBrutoOculto');
-
-            const novoRepasse = {
-                vendaId: document.getElementById('repVendaId').value,
-                vendaVisual: vendaVisualStr,
-                tipo: document.getElementById('repTipo').value,
-                numNf: document.getElementById('repNumNf').value,
-                produto: document.getElementById('repProduto').value,
-                emissor: document.getElementById('repEmissor').value,
-                tipoBeneficiario: document.getElementById('repTipoBeneficiario').value,
-                beneficiario: document.getElementById('repBeneficiario').value,
-                
-                bruto: parseFloat(elBrutoOculto ? elBrutoOculto.value : 0) || 0,
-                percImp: parseFloat(document.getElementById('repPercImp').value) || 0,
-                adiantamento: window.converterMoedaParaFloat(document.getElementById('repAdiantamento').value),
-                liquido: window.converterMoedaParaFloat(document.getElementById('repLiquido').value.replace('R$', '').trim()),
-                
-                dataPrev: document.getElementById('repDataPrev').value,
-                status: document.getElementById('repStatus').value,
-                parcela: document.getElementById('repParcela').value,
-                statusNfCorretor: document.getElementById('repStatusNfCorretor').value,
-                linkNfCorretor: urlFinalNfCorretor,
-                chavePix: document.getElementById('repChavePix').value,
-                criadoEm: serverTimestamp()
-            };
-
-            const idEscondido = document.getElementById('repasseIdEscondido').value;
-            if (idEscondido) {
-                await updateDoc(doc(db, "repasses", idEscondido), novoRepasse);
-                window.registrarLogAuditoria("Edição", "Financeiro/Repasses", `Alterou o repasse de ${novoRepasse.beneficiario} (Venda: ${novoRepasse.vendaVisual})`);
-                alert("✅ Repasse atualizado com sucesso!");
-            } else {
-                await addDoc(collection(db, "repasses"), novoRepasse);
-                alert("✅ Repasse salvo com sucesso!");
-            }
-
-            window.esconderFormRepasses();
-            window.carregarRepasses();
-        } catch (e) {
-            alert("❌ Erro ao salvar: " + e.message);
-        } finally {
-            btn.innerHTML = '<i class="bi bi-save"></i> Salvar Dados do Repasse';
-            btn.disabled = false;
+    try {
+        const selectVenda = document.getElementById('repVendaId');
+        let vendaVisualStr = '';
+        if(selectVenda.selectedIndex > 0) {
+            vendaVisualStr = selectVenda.options[selectVenda.selectedIndex].text.split(' -')[0];
         }
+
+        // NOVO: Pega o link digitado do Drive, ou mantém o que já estava oculto
+        let linkDigitadoNf = document.getElementById('arquivoNfCorretor').value.trim();
+        let urlFinalNfCorretor = linkDigitadoNf ? linkDigitadoNf : (document.getElementById('urlNfCorretorSalva').value || "");
+
+        const elBrutoOculto = document.getElementById('repBrutoOculto');
+
+        const novoRepasse = {
+            vendaId: document.getElementById('repVendaId').value,
+            vendaVisual: vendaVisualStr,
+            tipo: document.getElementById('repTipo').value,
+            numNf: document.getElementById('repNumNf').value,
+            produto: document.getElementById('repProduto').value,
+            emissor: document.getElementById('repEmissor').value,
+            tipoBeneficiario: document.getElementById('repTipoBeneficiario').value,
+            beneficiario: document.getElementById('repBeneficiario').value,
+            
+            bruto: parseFloat(elBrutoOculto ? elBrutoOculto.value : 0) || 0,
+            percImp: parseFloat(document.getElementById('repPercImp').value) || 0,
+            adiantamento: window.converterMoedaParaFloat(document.getElementById('repAdiantamento').value),
+            liquido: window.converterMoedaParaFloat(document.getElementById('repLiquido').value.replace('R$', '').trim()),
+            
+            dataPrev: document.getElementById('repDataPrev').value,
+            status: document.getElementById('repStatus').value,
+            parcela: document.getElementById('repParcela').value,
+            statusNfCorretor: document.getElementById('repStatusNfCorretor').value,
+            linkNfCorretor: urlFinalNfCorretor, // SALVANDO O LINK DO DRIVE AQUI
+            chavePix: document.getElementById('repChavePix').value,
+            criadoEm: serverTimestamp()
+        };
+
+        const idEscondido = document.getElementById('repasseIdEscondido').value;
+        if (idEscondido) {
+            await updateDoc(doc(db, "repasses", idEscondido), novoRepasse);
+            window.registrarLogAuditoria("Edição", "Financeiro/Repasses", `Alterou o repasse de ${novoRepasse.beneficiario} (Venda: ${novoRepasse.vendaVisual})`);
+            alert("✅ Repasse atualizado com sucesso!");
+        } else {
+            await addDoc(collection(db, "repasses"), novoRepasse);
+            alert("✅ Repasse salvo com sucesso!");
+        }
+
+        window.esconderFormRepasses();
+        window.carregarRepasses();
+    } catch (e) {
+        alert("❌ Erro ao salvar: " + e.message);
+    } finally {
+        btn.innerHTML = '<i class="bi bi-save"></i> Salvar Dados do Repasse';
+        btn.disabled = false;
     }
+}
 
     window.edRepasse = async function(id) {
-        try {
-            const docSnap = await getDoc(doc(db, "repasses", id));
-            if (docSnap.exists()) {
-                const r = docSnap.data();
-                document.getElementById('repasseIdEscondido').value = id;
-                const fMoeda = (val) => val ? Number(val).toLocaleString('pt-BR', {minimumFractionDigits: 2}) : '';
+    try {
+        const docSnap = await getDoc(doc(db, "repasses", id));
+        if (docSnap.exists()) {
+            const r = docSnap.data();
+            document.getElementById('repasseIdEscondido').value = id;
+            const fMoeda = (val) => val ? Number(val).toLocaleString('pt-BR', {minimumFractionDigits: 2}) : '';
 
-                document.getElementById('repVendaId').value = r.vendaId || '';
-                
-                await window.aoSelecionarVendaRepasse();
-                
-                document.getElementById('repProduto').value = r.produto || '';
-                document.getElementById('repTipo').value = r.tipo || 'Comissão';
-                document.getElementById('repNumNf').value = r.numNf || '';
-                document.getElementById('repEmissor').value = r.emissor || '';
-                document.getElementById('repTipoBeneficiario').value = r.tipoBeneficiario || 'Corretor';
-                
-                window.atualizarListaBeneficiariosRep();
-                const selBen = document.getElementById('repBeneficiario');
-                if(r.beneficiario && ![...selBen.options].some(o => o.value === r.beneficiario)) {
-                    selBen.innerHTML += `<option value="${r.beneficiario}">${r.beneficiario}</option>`;
-                }
-                selBen.value = r.beneficiario || '';
-
-                const elBrutoOrig = document.getElementById('repBrutoOriginal');
-                if(elBrutoOrig) elBrutoOrig.value = fMoeda(r.bruto);
-                
-                document.getElementById('repPercImp').value = r.percImp || 0;
-                document.getElementById('repAdiantamento').value = fMoeda(r.adiantamento);
-                
-                const valorFaturarLiq = (Number(r.liquido) || 0) + (Number(r.adiantamento) || 0);
-                const elValorFaturar = document.getElementById('repValorFaturar');
-                if(elValorFaturar) elValorFaturar.value = fMoeda(valorFaturarLiq);
-                
-                document.getElementById('repDataPrev').value = r.dataPrev || '';
-                
-                let statusParaEditar = r.status || 'Pendente';
-                if (statusParaEditar === 'NF entregue' || statusParaEditar === 'Aguardando repasse tomador') {
-                    statusParaEditar = 'NF entregue, aguardando repasse tomador';
-                }
-                document.getElementById('repStatus').value = statusParaEditar;
-                document.getElementById('repParcela').value = r.parcela || 'Auto';
-                document.getElementById('repStatusNfCorretor').value = r.statusNfCorretor || 'Não solicitada';
-                
-                if (r.linkNfCorretor) {
-                    document.getElementById('areaLinkNfCorretor').classList.remove('d-none');
-                    document.getElementById('linkNfCorretorAtual').href = r.linkNfCorretor;
-                    document.getElementById('urlNfCorretorSalva').value = r.linkNfCorretor;
-                } else {
-                    document.getElementById('areaLinkNfCorretor').classList.add('d-none');
-                    document.getElementById('urlNfCorretorSalva').value = '';
-                }
-                
-                const selPix = document.getElementById('repChavePix');
-                selPix.innerHTML = `<option value="${r.chavePix || ''}">${r.chavePix || 'Selecione...'}</option>`;
-                selPix.value = r.chavePix || '';
-
-                window.recalcularProvisaoLiquida();
-                window.mostrarFormRepasses();
+            document.getElementById('repVendaId').value = r.vendaId || '';
+            
+            await window.aoSelecionarVendaRepasse();
+            
+            document.getElementById('repProduto').value = r.produto || '';
+            document.getElementById('repTipo').value = r.tipo || 'Comissão';
+            document.getElementById('repNumNf').value = r.numNf || '';
+            document.getElementById('repEmissor').value = r.emissor || '';
+            document.getElementById('repTipoBeneficiario').value = r.tipoBeneficiario || 'Corretor';
+            
+            window.atualizarListaBeneficiariosRep();
+            const selBen = document.getElementById('repBeneficiario');
+            if(r.beneficiario && ![...selBen.options].some(o => o.value === r.beneficiario)) {
+                selBen.innerHTML += `<option value="${r.beneficiario}">${r.beneficiario}</option>`;
             }
-        } catch (e) {
-            alert("Erro ao editar: " + e.message);
+            selBen.value = r.beneficiario || '';
+
+            const elBrutoOrig = document.getElementById('repBrutoOriginal');
+            if(elBrutoOrig) elBrutoOrig.value = fMoeda(r.bruto);
+            
+            document.getElementById('repPercImp').value = r.percImp || 0;
+            document.getElementById('repAdiantamento').value = fMoeda(r.adiantamento);
+            
+            const valorFaturarLiq = (Number(r.liquido) || 0) + (Number(r.adiantamento) || 0);
+            const elValorFaturar = document.getElementById('repValorFaturar');
+            if(elValorFaturar) elValorFaturar.value = fMoeda(valorFaturarLiq);
+            
+            document.getElementById('repDataPrev').value = r.dataPrev || '';
+            
+            let statusParaEditar = r.status || 'Pendente';
+            if (statusParaEditar === 'NF entregue' || statusParaEditar === 'Aguardando repasse tomador') {
+                statusParaEditar = 'NF entregue, aguardando repasse tomador';
+            }
+            document.getElementById('repStatus').value = statusParaEditar;
+            document.getElementById('repParcela').value = r.parcela || 'Auto';
+            document.getElementById('repStatusNfCorretor').value = r.statusNfCorretor || 'Não solicitada';
+            
+            // NOVO: Preenche o campo de texto com o link do Drive para edição
+            if (r.linkNfCorretor) {
+                document.getElementById('arquivoNfCorretor').value = r.linkNfCorretor;
+                document.getElementById('urlNfCorretorSalva').value = r.linkNfCorretor;
+                document.getElementById('areaLinkNfCorretor').classList.remove('d-none');
+                document.getElementById('linkNfCorretorAtual').href = r.linkNfCorretor;
+            } else {
+                document.getElementById('arquivoNfCorretor').value = '';
+                document.getElementById('urlNfCorretorSalva').value = '';
+                document.getElementById('areaLinkNfCorretor').classList.add('d-none');
+            }
+            
+            const selPix = document.getElementById('repChavePix');
+            selPix.innerHTML = `<option value="${r.chavePix || ''}">${r.chavePix || 'Selecione...'}</option>`;
+            selPix.value = r.chavePix || '';
+
+            window.recalcularProvisaoLiquida();
+            window.mostrarFormRepasses();
         }
+    } catch (e) {
+        alert("Erro ao editar: " + e.message);
     }
+}
 
     window.exRepasse = async function(id) {
         if(confirm("Deseja mesmo excluir este repasse? O financeiro será alterado.")) {
@@ -7762,7 +7800,6 @@ window.carregarNotas = async function() {
     const btn = document.getElementById('btnSalvarNota');
     btn.innerHTML = "⏳ Salvando..."; btn.disabled = true;
     try {
-        // Varre o carrinho interno
         const itensNodes = document.querySelectorAll('.item-nota-row');
         let itensArray = [];
         itensNodes.forEach(node => {
@@ -7776,14 +7813,9 @@ window.carregarNotas = async function() {
             });
         });
 
-        let urlFinalNota = document.getElementById('urlNotaSalva').value || ""; 
-        const arquivoInput = document.getElementById('arquivoNota');
-        if (arquivoInput.files.length > 0) {
-            const arquivo = arquivoInput.files[0];
-            const storageRef = ref(storage, 'notas/' + Date.now() + '_' + arquivo.name.replace(/[^a-zA-Z0-9.]/g, '_'));
-            await uploadBytes(storageRef, arquivo);
-            urlFinalNota = await getDownloadURL(storageRef);
-        }
+        // NOVO: Pega o link digitado do Drive, ou mantém o que já estava oculto na edição
+        let linkDigitado = document.getElementById('arquivoNota').value.trim();
+        let urlFinalNota = linkDigitado ? linkDigitado : (document.getElementById('urlNotaSalva').value || "");
 
         const novaNota = {
             numero: document.getElementById('notaNumero').value,
@@ -7793,14 +7825,13 @@ window.carregarNotas = async function() {
             cnpjCpf: document.getElementById('notaCnpjCpf').value,
             brutoTotal: window.converterMoedaParaFloat(document.getElementById('notaBrutoTotal').value.replace('R$', '').trim()),
             percImp: parseFloat(document.getElementById('notaPercImp').value) || 0,
-            // NOVO: Captura a taxa extra manual do usuário
             taxaExtra: window.converterMoedaParaFloat(document.getElementById('notaTaxaExtra').value.replace('R$', '').trim()), 
             liquidoTotal: window.converterMoedaParaFloat(document.getElementById('notaLiquidoTotal').value.replace('R$', '').trim()),
             valorCreditado: window.converterMoedaParaFloat(document.getElementById('notaValorCreditado').value),
             prevCredito: document.getElementById('notaPrevCredito').value,
             status: document.getElementById('notaStatus').value,
             descricao: document.getElementById('notaDescricao').value,
-            link: urlFinalNota,
+            link: urlFinalNota, // SALVANDO O LINK DO DRIVE AQUI
             itens: itensArray,
             criadoEm: serverTimestamp()
         };
@@ -7845,19 +7876,20 @@ window.carregarNotas = async function() {
                 window.adicionarItemNota({vendaId: n.vendaId, tipo: n.tipo, bruto: n.bruto});
             }
             
+            // NOVO: Preenche o campo de texto com o link do Drive para edição
             if (n.link) {
+                document.getElementById('arquivoNota').value = n.link;
+                document.getElementById('urlNotaSalva').value = n.link;
                 document.getElementById('areaLinkNota').classList.remove('d-none');
                 document.getElementById('linkNotaAtual').href = n.link;
-                document.getElementById('urlNotaSalva').value = n.link;
             } else {
-                document.getElementById('areaLinkNota').classList.add('d-none');
+                document.getElementById('arquivoNota').value = '';
                 document.getElementById('urlNotaSalva').value = '';
+                document.getElementById('areaLinkNota').classList.add('d-none');
             }
             
-            // Roda o cálculo automático
             window.calcularNotaLiquido();
 
-            // MÁGICA: Restaura os valores manuais salvos por cima do auto-cálculo
             if (n.taxaExtra !== undefined) {
                 document.getElementById('notaTaxaExtra').value = n.taxaExtra > 0 ? fMoeda(n.taxaExtra) : 'R$ 0,00';
             }
@@ -8782,7 +8814,6 @@ window.gerarAutorizacaoNfRepasse = async function(idRepasse) {
     // ==========================================
     // TRAVA DE SEGURANÇA MÁXIMA: CORRETOR
     // ==========================================
-    // MODIFICAÇÃO: Liberados 'vendas_status', 'ranking_vgv' e 'informe_rendimentos'
     if (window.usuarioLogado.perfil === 'Corretor' && !['vendas_status', 'ranking_vgv', 'informe_rendimentos'].includes(tipo)) {
         area.innerHTML = `
             <div class="d-flex flex-column justify-content-center align-items-center h-100 text-danger">
@@ -9103,7 +9134,6 @@ window.gerarAutorizacaoNfRepasse = async function(idRepasse) {
         const statusCheckboxes = document.querySelectorAll('.filtro-status:checked');
         const statusVendaSelecionados = Array.from(statusCheckboxes).map(cb => cb.value);
 
-        // MODIFICAÇÃO AQUI: Se for Corretor, libera a base completa para ele ver o ranking de todos!
         let baseVendasParaRanking = window.obterVendasPermitidas();
         if (window.usuarioLogado.perfil === 'Corretor') {
             baseVendasParaRanking = window.vendasCadastradasCache; 
@@ -9741,6 +9771,110 @@ window.gerarAutorizacaoNfRepasse = async function(idRepasse) {
                 </div>
             </div>
         `;
+        area.innerHTML = html;
+
+    // ==========================================
+    // NOVA REGRA INJETADA AQUI (RELAÇÃO DE PAGAMENTOS EFETUADOS)
+    // ==========================================
+    } else if (tipo === 'relatorio_pagamentos_efetuados') {
+        const dtIni = document.getElementById('filtroDataIni').value;
+        const dtFim = document.getElementById('filtroDataFim').value;
+        let beneficiarioBusca = document.getElementById('filtroBeneficiario').value.toLowerCase();
+
+        if (window.usuarioLogado.perfil === 'Corretor') {
+            beneficiarioBusca = window.usuarioLogado.nome.toLowerCase();
+        }
+
+        let pagamentos = (window.repassesCache || []).filter(r => {
+            // Filtra estritamente os realizados
+            if (r.status !== 'Realizado') return false;
+            
+            // O sistema usa a dataPrev como referência principal nos relatórios
+            if (dtIni && r.dataPrev < dtIni) return false;
+            if (dtFim && r.dataPrev > dtFim) return false;
+            if (beneficiarioBusca && !(r.beneficiario && r.beneficiario.toLowerCase().includes(beneficiarioBusca))) return false;
+            return true;
+        });
+
+        if (pagamentos.length === 0) {
+            area.innerHTML = '<div class="d-flex flex-column justify-content-center align-items-center h-100 text-muted"><i class="bi bi-inbox fs-1"></i><p class="mt-2">Nenhum pagamento efetuado/realizado encontrado com estes filtros.</p></div>';
+            return;
+        }
+
+        // Ordena do pagamento mais recente para o mais antigo
+        pagamentos.sort((a, b) => new Date(b.dataPrev || '1970-01-01') - new Date(a.dataPrev || '1970-01-01'));
+
+        let totalPago = 0;
+        const fMoeda = (val) => val ? Number(val).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) : 'R$ 0,00';
+        const fData = (d) => window.formatarDataGlobal(d);
+
+        let html = `
+            <div class="alert border bg-light p-3 mb-4 shadow-sm" style="border-color: #198754 !important;">
+                <h6 class="alert-heading fw-bold text-success mb-1" style="font-size: 0.9rem;"><i class="bi bi-info-circle"></i> Relação de Pagamentos Efetuados</h6>
+                <p class="mb-0 text-muted" style="font-size: 0.8rem;">Lista de todos os repasses e pagamentos que já foram liquidados (Status: Realizado). Traz os valores pagos e o link nativo para acesso rápido à Nota Fiscal.</p>
+            </div>
+            <div class="d-flex justify-content-between mb-2 align-items-center">
+                <h5 class="text-dark fw-bold mb-0"><i class="bi bi-check2-circle text-success"></i> Pagamentos Realizados</h5>
+                <span class="badge bg-secondary fs-6">${pagamentos.length} Pagamento(s)</span>
+            </div>
+            <div class="table-responsive bg-white border rounded shadow-sm">
+                <table class="table table-sm table-hover table-bordered mb-0 align-middle" style="font-size: 0.85rem;" id="tabelaDadosRelatorio">
+                    <thead class="table-light text-dark">
+                        <tr class="text-nowrap text-center">
+                            <th>Data (Ref)</th>
+                            <th class="text-start">ID Venda</th>
+                            <th class="text-start">Produto</th>
+                            <th class="text-start">Beneficiário</th>
+                            <th class="text-end">Valor Líquido</th>
+                            <th>Status</th>
+                            <th class="text-center">Nota Fiscal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        pagamentos.forEach(r => {
+            let liquido = Number(r.liquido) || 0;
+            totalPago += liquido;
+
+            // Busca Inteligente: Tenta achar o link da NF no repasse. Se não tiver, busca nas Notas Gerais do Sistema.
+            let linkNf = r.linkNfCorretor || '';
+            
+            if (!linkNf && r.numNf) {
+                const nfSis = (window.notasCadastradasCache || []).find(n => n.numero === r.numNf);
+                if (nfSis && nfSis.link) linkNf = nfSis.link;
+            }
+            
+            if (!linkNf) {
+                const nfSis = (window.notasCadastradasCache || []).find(n => 
+                    (n.vendaId === r.vendaId || (n.itens && n.itens.some(i => i.vendaId === r.vendaId))) 
+                    && n.imobiliaria === r.beneficiario
+                );
+                if (nfSis && nfSis.link) linkNf = nfSis.link;
+            }
+
+            // O botão gera um HTML nativo <a>, o que garante que ele fique CLICÁVEL no PDF quando usar a opção de imprimir (Ctrl+P)!
+            let btnLink = linkNf 
+            ? `<a href="${linkNf}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary py-0 px-2 fw-bold text-decoration-none" title="Abrir PDF da NF" style="font-size: 0.75rem;"><i class="bi bi-box-arrow-up-right"></i> Abrir NF</a>` 
+            : `<span class="text-muted small"><i class="bi bi-dash"></i> Sem anexo</span>`;
+
+            html += `<tr>
+                <td class="text-center text-nowrap">${r.dataPrev ? fData(r.dataPrev) : '-'}</td>
+                <td class="fw-bold text-primary text-nowrap">${r.vendaVisual || '-'}</td>
+                <td class="text-truncate" style="max-width: 150px;" title="${r.produto || '-'}">${r.produto || '-'}</td>
+                <td class="text-truncate" style="max-width: 200px;"><strong>${r.beneficiario || '-'}</strong><br><small class="text-muted">${r.tipoBeneficiario || '-'}</small></td>
+                <td class="text-end fw-bold text-success fs-6">${fMoeda(liquido)}</td>
+                <td class="text-center text-success fw-bold"><i class="bi bi-check-circle-fill"></i> Realizado</td>
+                <td class="text-center">${btnLink}</td>
+            </tr>`;
+        });
+
+        html += `</tbody><tfoot class="table-light"><tr>
+            <td colspan="4" class="text-end fw-bold text-dark text-uppercase fs-6">TOTAL PAGO NO PERÍODO:</td>
+            <td class="text-end fw-bold text-success fs-5">${fMoeda(totalPago)}</td>
+            <td colspan="2"></td>
+        </tr></tfoot></table></div>`;
+        
         area.innerHTML = html;
 
     } else {
